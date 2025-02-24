@@ -6,10 +6,26 @@ const supabase = createClient(
 );
 
 export async function handler(event) {
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Max-Age': '86400'
+      }
+    };
+  }
+
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
-      body: JSON.stringify({ error: 'Method not allowed' }),
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
@@ -18,7 +34,10 @@ export async function handler(event) {
   if (!userId) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: 'User ID is required' }),
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: 'User ID is required' })
     };
   }
 
@@ -36,14 +55,20 @@ export async function handler(event) {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
-      body: JSON.stringify(data.settings),
+      body: JSON.stringify(data.settings)
     };
   } catch (error) {
     console.error('Error fetching settings:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to fetch settings' }),
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ error: 'Failed to fetch settings' })
     };
   }
 }

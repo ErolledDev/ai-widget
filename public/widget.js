@@ -9,11 +9,17 @@ class BusinessChatWidget {
     try {
       // Fetch settings from your API
       const response = await fetch(`https://chatwidgetai.netlify.app/api/settings/${this.config.uid}`, {
+        method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Origin': window.location.origin
+          'Content-Type': 'application/json'
         }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       this.settings = await response.json();
       
       // Create and inject styles
@@ -179,11 +185,10 @@ class BusinessChatWidget {
         this.addMessage('user', message);
         
         try {
-          const response = await fetch(`https://chatwidgetai.netlify.app/api/chat`, {
+          const response = await fetch('https://chatwidgetai.netlify.app/api/chat', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Origin': window.location.origin
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               message,
@@ -191,6 +196,10 @@ class BusinessChatWidget {
               settings: this.settings
             })
           });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
           
           const data = await response.json();
           this.addMessage('assistant', data.response);
@@ -213,6 +222,7 @@ class BusinessChatWidget {
       this.addMessage('assistant', `Hi! I'm ${this.settings.representativeName}. How can I help you today?`);
     } catch (error) {
       console.error('Failed to initialize chat widget:', error);
+      throw error; // Re-throw the error for better error handling
     }
   }
 
