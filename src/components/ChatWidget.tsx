@@ -67,7 +67,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
 
   return (
     <div 
-      className={`fixed ${isTest ? 'right-[320px]' : 'right-6'} bottom-6 z-50 flex flex-col items-end font-sans`}
+      className={`fixed bottom-6 ${isTest ? 'right-[320px]' : 'right-6'} z-[999999] flex flex-col items-end font-sans`}
       style={widgetStyles}
     >
       {isOpen && (
@@ -111,10 +111,10 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-messageIn`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 leading-relaxed bg-white text-gray-800 shadow-sm text-[15px] ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 leading-relaxed text-[15px] ${
                     msg.role === 'user'
-                      ? 'border-2 border-[var(--chat-primary-color)]'
-                      : 'border border-gray-100'
+                      ? 'bg-[var(--chat-primary-color)] text-white'
+                      : 'bg-white text-gray-800 border border-gray-100 shadow-sm'
                   }`}
                   style={{
                     borderBottomRightRadius: msg.role === 'user' ? '4px' : undefined,
