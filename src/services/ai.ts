@@ -13,7 +13,7 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 150; // Reduced max length for concise responses
+  private readonly maxResponseLength = 150;
 
   constructor(context: ChatContext) {
     this.context = this.sanitizeContext(context);
@@ -31,10 +31,13 @@ export class AIService {
           2. NEVER make up or invent any information not provided above
           3. Keep all responses under 2 sentences
           4. Use a casual, friendly tone like you're texting
-          5. Use line breaks to make responses more readable
-          6. If asked about something not in the business info, say: "Sorry, I don't have that info! Let me tell you what we do have though..."
-          7. Focus on the most relevant products/services for the customer's needs
-          8. Be enthusiastic but not overly sales-y
+          5. You can use basic formatting:
+             - Use * for emphasis (e.g., *amazing*)
+             - Use emojis sparingly (max 1-2 per message)
+             - Use line breaks for readability
+          6. If asked about something not in the business info, say: "Sorry, I don't have that info! Let me tell you what we do have though 😊"
+          7. Focus on the most relevant products/services
+          8. Be enthusiastic but natural
           9. Write like a real person having a chat
           10. Keep it simple and direct
           
@@ -63,6 +66,14 @@ export class AIService {
       .trim();
   }
 
+  private formatResponse(text: string): string {
+    // Allow specific special characters and emojis
+    return text
+      .replace(/\*\*?(.*?)\*\*?/g, '<em>$1</em>') // Convert markdown emphasis to HTML
+      .replace(/\n/g, '<br>') // Convert newlines to HTML breaks
+      .trim();
+  }
+
   private sanitizeResponse(response: string): string {
     let sanitized = response
       .trim()
@@ -70,12 +81,11 @@ export class AIService {
       .replace(/([.!?])\s*/g, '$1\n') // Add line breaks after punctuation
       .replace(/^[a-z]/, c => c.toUpperCase()); // Capitalize first letter
     
-    // Enforce length limit
     if (sanitized.length > this.maxResponseLength) {
       sanitized = sanitized.substring(0, this.maxResponseLength).replace(/[^.!?]+$/, '') + '...';
     }
 
-    return sanitized;
+    return this.formatResponse(sanitized);
   }
 
   private validateResponse(response: string): boolean {
@@ -100,21 +110,21 @@ export class AIService {
       responseText = this.sanitizeResponse(responseText);
       
       if (!this.validateResponse(responseText)) {
-        return `Hey! Let me tell you about what we've got at ${this.context.businessName}. What are you looking for?`;
+        return `Hey! Let me tell you about what we've got at ${this.context.businessName} 😊<br>What are you looking for?`;
       }
 
       return responseText;
     } catch (error) {
       console.error('Error sending message to Gemini:', error);
-      return `Hey there! Sorry for the hiccup. What can I tell you about our products?`;
+      return `Hey there! Sorry for the hiccup 😅<br>What can I tell you about our products?`;
     }
   }
 
   getInitialGreeting(): string {
-    return `Hey! I'm ${this.context.representativeName}.\nWhat can I help you find at ${this.context.businessName} today?`;
+    return `Hey! I'm ${this.context.representativeName} 👋<br>What can I help you find at ${this.context.businessName} today?`;
   }
 
   static getFormPrompt(): string {
-    return "Want to share your contact info? It'll help me serve you better!";
+    return "Want to share your contact info? It'll help me serve you better! 😊";
   }
 }

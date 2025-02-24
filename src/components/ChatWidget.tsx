@@ -85,9 +85,8 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                       ? 'bg-blue-500 text-white'
                       : 'bg-gray-100 text-gray-800'
                   }`}
-                >
-                  {msg.content}
-                </div>
+                  dangerouslySetInnerHTML={{ __html: msg.content }}
+                />
               </div>
             ))}
             {isLoading && (
