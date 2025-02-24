@@ -2,6 +2,8 @@ class BusinessChatWidget {
   constructor(config) {
     this.config = config;
     this.isOpen = false;
+    this.hasNewMessage = false;
+    this.isLoading = false;
     this.init();
   }
 
@@ -25,12 +27,53 @@ class BusinessChatWidget {
       // Create and inject styles
       const styles = document.createElement('style');
       styles.textContent = `
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes messageIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-4px);
+          }
+        }
+
+        @keyframes ping {
+          75%, 100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+
         .business-chat-widget {
           position: fixed;
-          bottom: 20px;
-          right: 20px;
+          bottom: 24px;
+          right: 24px;
           z-index: 999999;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
         }
         
         .chat-toggle-button {
@@ -38,32 +81,61 @@ class BusinessChatWidget {
           color: white;
           border: none;
           border-radius: 50%;
-          width: 60px;
-          height: 60px;
+          width: 56px;
+          height: 56px;
           cursor: pointer;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: transform 0.2s;
+          transition: all 0.2s;
+          position: relative;
         }
 
         .chat-toggle-button:hover {
           transform: scale(1.05);
+          opacity: 0.9;
+        }
+
+        .chat-toggle-button:active {
+          transform: scale(0.95);
+        }
+
+        .notification-dot {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          width: 16px;
+          height: 16px;
+          background-color: #EF4444;
+          border-radius: 50%;
+        }
+
+        .notification-dot-ping {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          width: 16px;
+          height: 16px;
+          background-color: #EF4444;
+          border-radius: 50%;
+          animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
 
         .chat-window {
           position: fixed;
           bottom: 100px;
-          right: 20px;
-          width: 380px;
-          height: 600px;
+          right: 24px;
+          width: 350px;
+          height: 500px;
           background: white;
           border-radius: 12px;
-          box-shadow: 0 5px 40px rgba(0,0,0,0.16);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
           display: none;
           flex-direction: column;
           overflow: hidden;
+          border: 1px solid #E5E7EB;
+          animation: slideUp 0.3s ease-out;
         }
 
         .chat-window.open {
@@ -77,12 +149,16 @@ class BusinessChatWidget {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .chat-header h3 {
           margin: 0;
           font-size: 16px;
           font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
         .chat-close {
@@ -91,17 +167,26 @@ class BusinessChatWidget {
           color: white;
           cursor: pointer;
           padding: 4px;
+          opacity: 1;
+          transition: opacity 0.2s;
+        }
+
+        .chat-close:hover {
+          opacity: 0.75;
         }
 
         .chat-messages {
           flex: 1;
           overflow-y: auto;
           padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
         }
 
         .chat-input-container {
           padding: 16px;
-          border-top: 1px solid #e5e7eb;
+          border-top: 1px solid #E5E7EB;
           display: flex;
           gap: 8px;
         }
@@ -109,9 +194,16 @@ class BusinessChatWidget {
         .chat-input {
           flex: 1;
           padding: 8px 12px;
-          border: 1px solid #e5e7eb;
+          border: 1px solid #E5E7EB;
           border-radius: 8px;
           font-size: 14px;
+          transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+          outline: none;
+          border-color: ${this.settings.color || '#4F46E5'};
+          box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
         }
 
         .chat-send {
@@ -119,29 +211,73 @@ class BusinessChatWidget {
           color: white;
           border: none;
           border-radius: 8px;
-          padding: 8px 16px;
+          padding: 8px;
+          width: 48px;
           cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: opacity 0.2s;
+        }
+
+        .chat-send:hover {
+          opacity: 0.9;
+        }
+
+        .chat-send:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
 
         .message {
-          margin-bottom: 12px;
           max-width: 80%;
           word-wrap: break-word;
+          padding: 12px;
+          border-radius: 12px;
+          animation: messageIn 0.3s ease-out;
+          line-height: 1.4;
         }
 
         .message.user {
           margin-left: auto;
           background-color: ${this.settings.color || '#4F46E5'};
           color: white;
-          padding: 8px 12px;
-          border-radius: 12px 12px 0 12px;
+          border-bottom-right-radius: 4px;
         }
 
         .message.assistant {
-          background-color: #f3f4f6;
-          color: #1f2937;
-          padding: 8px 12px;
-          border-radius: 12px 12px 12px 0;
+          margin-right: auto;
+          background-color: #F3F4F6;
+          color: #1F2937;
+          border-bottom-left-radius: 4px;
+        }
+
+        .typing-indicator {
+          display: flex;
+          gap: 4px;
+          padding: 12px;
+          background-color: #F3F4F6;
+          border-radius: 12px;
+          border-bottom-left-radius: 4px;
+          width: fit-content;
+          margin-right: auto;
+          animation: messageIn 0.3s ease-out;
+        }
+
+        .typing-dot {
+          width: 8px;
+          height: 8px;
+          background-color: #9CA3AF;
+          border-radius: 50%;
+          animation: bounce 0.8s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+          animation-delay: 0.4s;
         }
       `;
       document.head.appendChild(styles);
@@ -155,20 +291,39 @@ class BusinessChatWidget {
       chatWindow.className = 'chat-window';
       chatWindow.innerHTML = `
         <div class="chat-header">
-          <h3>${this.settings.businessName || 'Chat with us'}</h3>
-          <button class="chat-close">✕</button>
+          <h3>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            ${this.settings.businessName || 'Chat with us'}
+          </h3>
+          <button class="chat-close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         <div class="chat-messages"></div>
         <div class="chat-input-container">
           <input type="text" class="chat-input" placeholder="Type your message...">
-          <button class="chat-send">Send</button>
+          <button class="chat-send">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
         </div>
       `;
 
       // Create toggle button
       const button = document.createElement('button');
       button.className = 'chat-toggle-button';
-      button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+      button.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+      `;
       
       // Add event listeners
       button.onclick = () => this.toggleChat();
@@ -179,12 +334,16 @@ class BusinessChatWidget {
       
       const sendMessage = async () => {
         const message = input.value.trim();
-        if (!message) return;
+        if (!message || this.isLoading) return;
         
         input.value = '';
         this.addMessage('user', message);
         
         try {
+          this.isLoading = true;
+          this.showTypingIndicator();
+          sendButton.disabled = true;
+          
           const response = await fetch('https://chatwidgetai.netlify.app/api/chat', {
             method: 'POST',
             headers: {
@@ -202,10 +361,15 @@ class BusinessChatWidget {
           }
           
           const data = await response.json();
+          this.hideTypingIndicator();
           this.addMessage('assistant', data.response);
         } catch (error) {
           console.error('Failed to send message:', error);
+          this.hideTypingIndicator();
           this.addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+        } finally {
+          this.isLoading = false;
+          sendButton.disabled = false;
         }
       };
       
@@ -222,17 +386,57 @@ class BusinessChatWidget {
       this.addMessage('assistant', `Hi! I'm ${this.settings.representativeName}. How can I help you today?`);
     } catch (error) {
       console.error('Failed to initialize chat widget:', error);
-      throw error; // Re-throw the error for better error handling
+      throw error;
     }
   }
 
   toggleChat() {
     this.isOpen = !this.isOpen;
     const chatWindow = document.querySelector('.chat-window');
-    chatWindow.classList.toggle('open');
+    const button = document.querySelector('.chat-toggle-button');
     
     if (this.isOpen) {
+      chatWindow.classList.add('open');
       chatWindow.querySelector('.chat-input').focus();
+      this.hasNewMessage = false;
+      this.updateNotificationDot();
+    } else {
+      chatWindow.classList.remove('open');
+    }
+  }
+
+  showTypingIndicator() {
+    const messagesContainer = document.querySelector('.chat-messages');
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'typing-indicator';
+    typingIndicator.innerHTML = `
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    `;
+    messagesContainer.appendChild(typingIndicator);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  hideTypingIndicator() {
+    const typingIndicator = document.querySelector('.typing-indicator');
+    if (typingIndicator) {
+      typingIndicator.remove();
+    }
+  }
+
+  updateNotificationDot() {
+    const button = document.querySelector('.chat-toggle-button');
+    const existingDots = button.querySelectorAll('.notification-dot, .notification-dot-ping');
+    existingDots.forEach(dot => dot.remove());
+
+    if (this.hasNewMessage && !this.isOpen) {
+      const dot = document.createElement('span');
+      dot.className = 'notification-dot';
+      const pingDot = document.createElement('span');
+      pingDot.className = 'notification-dot-ping';
+      button.appendChild(pingDot);
+      button.appendChild(dot);
     }
   }
 
@@ -243,6 +447,11 @@ class BusinessChatWidget {
     messageDiv.textContent = content;
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    if (role === 'assistant' && !this.isOpen) {
+      this.hasNewMessage = true;
+      this.updateNotificationDot();
+    }
   }
 }
 
