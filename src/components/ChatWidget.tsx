@@ -15,6 +15,7 @@ interface ChatWidgetProps {
 export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [hasNewMessage, setHasNewMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, startChat, isLoading } = useAIChat(settings);
 
@@ -26,7 +27,10 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!isOpen && messages.length > 0) {
+      setHasNewMessage(true);
+    }
+  }, [messages, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,17 +41,22 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
     await sendMessage(currentMessage);
   };
 
+  const handleOpen = () => {
+    setIsOpen(true);
+    setHasNewMessage(false);
+  };
+
   const widgetStyles = {
     '--chat-primary-color': settings.color,
   } as React.CSSProperties;
 
   return (
     <div 
-      className={`fixed ${isTest ? 'right-[320px]' : 'right-4'} bottom-4 z-50 flex flex-col`}
+      className={`fixed ${isTest ? 'right-[320px]' : 'right-6'} bottom-6 z-50 flex flex-col items-end`}
       style={widgetStyles}
     >
       {isOpen && (
-        <div className="mb-4 w-[350px] h-[500px] bg-white rounded-lg shadow-xl flex flex-col border border-gray-200">
+        <div className="mb-4 w-[350px] h-[500px] bg-white rounded-lg shadow-xl flex flex-col border border-gray-200 animate-slideUp">
           <div 
             className="p-4 flex justify-between items-center border-b"
             style={{ backgroundColor: settings.color }}
@@ -58,7 +67,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-white hover:opacity-75"
+              className="text-white hover:opacity-75 transition-opacity"
             >
               <X className="h-5 w-5" />
             </button>
@@ -68,7 +77,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-messageIn`}
               >
                 <div
                   className={`max-w-[80%] rounded-lg p-3 ${
@@ -81,6 +90,15 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                 </div>
               </div>
             ))}
+            {isLoading && (
+              <div className="flex justify-start animate-messageIn">
+                <div className="bg-gray-100 rounded-lg p-3 flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -96,7 +114,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-4 py-2 rounded-lg text-white flex items-center justify-center w-12"
+                className="px-4 py-2 rounded-lg text-white flex items-center justify-center w-12 transition-colors"
                 style={{ backgroundColor: settings.color }}
               >
                 {isLoading ? (
@@ -112,11 +130,17 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
 
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
-          className="rounded-full p-4 text-white shadow-lg hover:opacity-90 transition-opacity"
+          onClick={handleOpen}
+          className="relative rounded-full p-4 text-white shadow-lg hover:opacity-90 transition-all transform hover:scale-105 active:scale-95"
           style={{ backgroundColor: settings.color }}
         >
           <MessageCircle className="h-6 w-6" />
+          {hasNewMessage && (
+            <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full animate-ping" />
+          )}
+          {hasNewMessage && (
+            <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full" />
+          )}
         </button>
       )}
     </div>
