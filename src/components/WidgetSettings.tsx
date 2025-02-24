@@ -25,90 +25,83 @@ export default function WidgetSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [showTestWidget, setShowTestWidget] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch settings on component mount
   useEffect(() => {
-    let isMounted = true;
-
     async function fetchSettings() {
       if (!user?.id) return;
-
+      
       try {
-        setError(null);
         setIsLoading(true);
-
         const { data, error } = await supabase
           .from('widget_settings')
           .select('settings')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .single();
 
-        if (error) throw error;
-
-        if (!data) {
-          // Settings don't exist yet, create them with defaults
-          const { error: insertError } = await supabase
-            .from('widget_settings')
-            .insert([{
-              user_id: user.id,
-              settings: defaultSettings
-            }])
-            .select()
-            .single();
-
-          if (insertError) throw insertError;
-
-          if (isMounted) {
-            setSettings(defaultSettings);
-          }
-        } else if (isMounted) {
+        if (error && error.code !== 'PGRST116') { // PGRST116 means no data found
+          throw error;
+        }
+        
+        if (data?.settings) {
           setSettings(data.settings);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error fetching settings:', err);
-        if (isMounted) {
-          setError('Failed to load settings. Please try refreshing the page.');
-        }
+        setError('Failed to load settings');
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     }
 
     fetchSettings();
+  }, [user, supabase]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id, supabase]);
-
+  // Save function with better error handling
   const handleSave = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setError('You must be logged in to save settings');
+      return;
+    }
+
+    // Validate settings
+    if (!settings.businessName.trim()) {
+      setError('Business name is required');
+      return;
+    }
+
+    if (!settings.representativeName.trim()) {
+      setError('Representative name is required');
+      return;
+    }
 
     setIsSaving(true);
-    setSaveStatus('idle');
     setError(null);
 
     try {
-      const { error } = await supabase
+      // First try to update
+      const { error: upsertError } = await supabase
         .from('widget_settings')
         .upsert({
           user_id: user.id,
-          settings
-        })
-        .select()
-        .single();
+          settings: {
+            color: settings.color,
+            businessName: settings.businessName.trim(),
+            representativeName: settings.representativeName.trim(),
+            businessInfo: settings.businessInfo.trim()
+          }
+        }, {
+          onConflict: 'user_id'
+        });
 
-      if (error) throw error;
+      if (upsertError) throw upsertError;
 
-      setSaveStatus('success');
-      setTimeout(() => setSaveStatus('idle'), 3000);
+      setError('Settings saved successfully!');
+      setTimeout(() => setError(null), 3000);
     } catch (err: any) {
       console.error('Error saving settings:', err);
-      setSaveStatus('error');
-      setError('Failed to save settings. Please try again.');
+      setError(err.message || 'Failed to save settings. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -135,26 +128,22 @@ export default function WidgetSettings() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-8">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-8">
-          {error}
-        </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="text-indigo-600 hover:text-indigo-500"
-        >
-          Refresh Page
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-8">Widget Settings</h1>
       
+      {error && (
+        <div 
+          className={`mb-4 p-4 rounded ${
+            error.includes('success') 
+              ? 'bg-green-50 text-green-700 border border-green-200' 
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}
+        >
+          {error}
+        </div>
+      )}
+
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Appearance</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -178,27 +167,29 @@ export default function WidgetSettings() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Business Name
+                Business Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={settings.businessName}
                 onChange={(e) => setSettings({ ...settings, businessName: e.target.value })}
-                placeholder="e.g., Cedrick Online Store"
+                placeholder="e.g., Acme Corp"
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sales Representative Name
+                Sales Representative Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={settings.representativeName}
                 onChange={(e) => setSettings({ ...settings, representativeName: e.target.value })}
-                placeholder="e.g., John Doe"
+                placeholder="e.g., John Smith"
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                required
               />
             </div>
           </div>
@@ -211,7 +202,7 @@ export default function WidgetSettings() {
           <label className="block text-sm font-medium text-gray-700">
             Detailed Business Information
             <span className="text-sm text-gray-500 font-normal ml-2">
-              (Include locations, products, services, contact info)
+              (Include products, services, contact info)
             </span>
           </label>
           <textarea
@@ -219,7 +210,7 @@ export default function WidgetSettings() {
             onChange={(e) => setSettings({ ...settings, businessInfo: e.target.value })}
             rows={8}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Provide comprehensive information about your business..."
+            placeholder="Describe your business, products, and services..."
           />
         </div>
       </div>
@@ -242,24 +233,15 @@ export default function WidgetSettings() {
           >
             {showTestWidget ? 'Hide Test Widget' : 'Test Widget'}
           </button>
-
-          {saveStatus === 'success' && (
-            <span className="text-green-600">Settings saved successfully!</span>
-          )}
-          {saveStatus === 'error' && (
-            <span className="text-red-600">{error || 'Error saving settings'}</span>
-          )}
         </div>
 
-        <div className="relative">
-          <button
-            onClick={copyToClipboard}
-            className="inline-flex items-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            {copied ? 'Copied!' : 'Copy Widget Code'}
-          </button>
-        </div>
+        <button
+          onClick={copyToClipboard}
+          className="inline-flex items-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+          {copied ? 'Copied!' : 'Copy Widget Code'}
+        </button>
       </div>
 
       {showTestWidget && (
