@@ -12,7 +12,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState(() => createClient(
     import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_API_KEY, // Using the service role key for full access
+    import.meta.env.VITE_SUPABASE_ANON_KEY, // Changed to use the anon key for client-side auth
     {
       auth: {
         persistSession: true,
