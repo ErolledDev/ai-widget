@@ -43,13 +43,14 @@ export class AIService {
           4. Use a casual, friendly tone like you're texting
           5. You can use basic formatting:
              - Use * for emphasis (e.g., *amazing*)
-             - Use emojis sparingly (max 1-2 per message)
+             - Use only these emojis: :) :( ;) <3
              - Use line breaks for readability
-          6. If asked about something not in the business info, say: "Sorry, I don't have that info! Let me tell you what we do have though 😊"
+          6. If asked about something not in the business info, say: "Sorry, I don't have that info! Let me tell you what we do have though :)"
           7. Focus on the most relevant products/services
           8. Be enthusiastic but natural
           9. Write like a real person having a chat
           10. Keep it simple and direct
+          11. NEVER use special characters or emojis other than the allowed ones
           
           Remember: You're ${this.context.representativeName} having a casual chat with customers about ${this.context.businessName}.`,
         },
@@ -71,17 +72,29 @@ export class AIService {
   }
 
   private sanitizeText(text: string): string {
+    // Only allow alphanumeric characters, basic punctuation, and specific emojis
     return text
-      .replace(/[^\w\s.,!?-]/g, '')
+      .replace(/[^\w\s.,!?:;()<>-]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
   }
 
   private formatResponse(text: string): string {
-    return text
+    // Convert markdown-style formatting to HTML
+    let formatted = text
       .replace(/\*\*?(.*?)\*\*?/g, '<em>$1</em>')
       .replace(/\n/g, '<br>')
+      // Convert text emoticons to safe characters
+      .replace(/:\)/g, '🙂')
+      .replace(/:\(/g, '☹️')
+      .replace(/;\)/g, '😉')
+      .replace(/<3/g, '❤️')
       .trim();
+    
+    // Remove any other special characters or emojis
+    formatted = formatted.replace(/[^\w\s.,!?:;()<>🙂☹️😉❤️\-<>\/br]/g, '');
+    
+    return formatted;
   }
 
   private sanitizeResponse(response: string): string {
