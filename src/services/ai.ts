@@ -2,7 +2,6 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize the Gemini API client
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
@@ -16,7 +15,7 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 150;
+  private readonly maxResponseLength = 120; // Shorter responses for more natural chat
   private visitorId: string;
   private sessionStartTime: Date;
   private messageCount: number = 0;
@@ -31,32 +30,40 @@ export class AIService {
       history: [
         {
           role: 'user',
-          parts: `You are a friendly sales representative for ${this.context.businessName}. 
-          Your name is ${this.context.representativeName}.
-          
-          CRITICAL INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
-          1. Only use the following business information to help customers:
+          parts: `You are ${this.context.representativeName}, a friendly sales rep at ${this.context.businessName}.
+
+          CRITICAL RULES - FOLLOW THESE EXACTLY:
+          1. Only use this business info:
           ${this.context.businessInfo}
           
-          2. NEVER make up or invent any information not provided above
-          3. Keep all responses under 2 sentences
-          4. Use a casual, friendly tone like you're texting
-          5. You can use basic formatting:
-             - Use * for emphasis (e.g., *amazing*)
-             - Use only these emojis: :) :( ;) <3
-             - Use line breaks for readability
-          6. If asked about something not in the business info, say: "Sorry, I don't have that info! Let me tell you what we do have though :)"
-          7. Focus on the most relevant products/services
-          8. Be enthusiastic but natural
-          9. Write like a real person having a chat
-          10. Keep it simple and direct
-          11. NEVER use special characters or emojis other than the allowed ones
+          2. Response rules:
+             - Keep responses under 100 characters when possible
+             - Use casual, friendly language like texting
+             - Write like a real person chatting
+             - Be enthusiastic but natural
+             - Focus on helping customers find what they need
           
-          Remember: You're ${this.context.representativeName} having a casual chat with customers about ${this.context.businessName}.`,
+          3. Formatting:
+             - Use *text* for emphasis (sparingly)
+             - Only use these emojis: 😊 👋 👍 🥰 ❤️
+             - No other special characters or symbols
+          
+          4. Never:
+             - Make up information not provided
+             - Use formal language or business speak
+             - Apologize for being AI
+             - Use complex formatting
+             - Say as ${this.context.representativeName}
+             - Talk rude 
+          
+          5. If asked about unknown info:
+             Say "Let me tell you what we do have!" and redirect to known products/services
+          
+          Remember: You're having a casual chat to help customers find what they need.`,
         },
         {
           role: 'model',
-          parts: `Got it! I'll keep things short, friendly and focused on helping customers as ${this.context.representativeName} from ${this.context.businessName}.`,
+          parts: `Got it! I'll keep things simple and friendly as ${this.context.representativeName}.`,
         },
       ],
     });
@@ -72,9 +79,8 @@ export class AIService {
   }
 
   private sanitizeText(text: string): string {
-    // Only allow alphanumeric characters, basic punctuation, and specific emojis
     return text
-      .replace(/[^\w\s.,!?:;()<>-]/g, '')
+      .replace(/[^\w\s.,!?'-]/g, '') // Only allow basic punctuation
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -84,15 +90,14 @@ export class AIService {
     let formatted = text
       .replace(/\*\*?(.*?)\*\*?/g, '<em>$1</em>')
       .replace(/\n/g, '<br>')
-      // Convert text emoticons to safe characters
-      .replace(/:\)/g, '🙂')
-      .replace(/:\(/g, '☹️')
-      .replace(/;\)/g, '😉')
-      .replace(/<3/g, '❤️')
+      // Only allow specific emojis
+      .replace(/:[)]/g, '😊')
+      .replace(/o\//g, '👋')
+      .replace(/\+1/g, '👍')
       .trim();
     
-    // Remove any other special characters or emojis
-    formatted = formatted.replace(/[^\w\s.,!?:;()<>🙂☹️😉❤️\-<>\/br]/g, '');
+    // Remove any remaining special characters
+    formatted = formatted.replace(/[^\w\s.,!?'😊👋👍\-<>\/br]/g, '');
     
     return formatted;
   }
@@ -100,12 +105,16 @@ export class AIService {
   private sanitizeResponse(response: string): string {
     let sanitized = response
       .trim()
-      .replace(/\s+/g, ' ')
-      .replace(/([.!?])\s*/g, '$1\n')
-      .replace(/^[a-z]/, c => c.toUpperCase());
+      .replace(/\s+/g, ' ') // Remove extra spaces
+      .replace(/([.!?])\s*/g, '$1\n') // Add line breaks after punctuation
+      .replace(/^[a-z]/, c => c.toUpperCase()); // Capitalize first letter
     
+    // Truncate long responses naturally
     if (sanitized.length > this.maxResponseLength) {
-      sanitized = sanitized.substring(0, this.maxResponseLength).replace(/[^.!?]+$/, '') + '...';
+      sanitized = sanitized
+        .substring(0, this.maxResponseLength)
+        .replace(/[^.!?]+$/, '')
+        .trim();
     }
 
     return this.formatResponse(sanitized);
@@ -118,9 +127,16 @@ export class AIService {
       'I do not have',
       'I am an AI',
       'As an AI',
+      'artificial',
+      'assistant',
+      'help you with',
+      'my purpose',
+      'designed to',
     ];
 
-    return !redFlags.some(flag => response.toLowerCase().includes(flag.toLowerCase()));
+    return !redFlags.some(flag => 
+      response.toLowerCase().includes(flag.toLowerCase())
+    );
   }
 
   async sendMessage(message: string): Promise<string> {
@@ -134,7 +150,7 @@ export class AIService {
       responseText = this.sanitizeResponse(responseText);
       
       if (!this.validateResponse(responseText)) {
-        return `Hey! Let me tell you about what we've got at ${this.context.businessName} 😊<br>What are you looking for?`;
+        return `Hey! Let me tell you about our awesome stuff at ${this.context.businessName} 😊`;
       }
 
       // Update analytics
@@ -142,13 +158,13 @@ export class AIService {
 
       return responseText;
     } catch (error) {
-      console.error('Error sending message to Gemini:', error);
-      return `Hey there! Sorry for the hiccup 😅<br>What can I tell you about our products?`;
+      console.error('Error in chat:', error);
+      return `Hey! What can I help you find today? 😊`;
     }
   }
 
   private async updateAnalytics(message: string, response: string) {
-    if (!this.context.userId) return; // Skip analytics if no user ID
+    if (!this.context.userId) return;
 
     try {
       const supabase = createClient(
@@ -191,7 +207,7 @@ export class AIService {
   }
 
   getInitialGreeting(): string {
-    return `Hey! I'm ${this.context.representativeName} 👋<br>What can I help you find at ${this.context.businessName} today?`;
+    return `Hey! I'm ${this.context.representativeName} 👋 What can I help you find today?`;
   }
 
   static getFormPrompt(): string {

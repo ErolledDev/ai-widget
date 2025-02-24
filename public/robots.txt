@@ -1,0 +1,7 @@
+# https://chatwidgetai.netlify.app
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://chatwidgetai.netlify.app/sitemap.xml

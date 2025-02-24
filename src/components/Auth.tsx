@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../contexts/AuthContext';
-import { MessageCircle, Sparkles } from 'lucide-react';
+import { MessageCircle, Sparkles, BarChart2, Palette, Clock, Shield, Bot, Settings } from 'lucide-react';
 
 export default function Auth() {
   const { supabase } = useAuth();
@@ -40,40 +40,83 @@ export default function Auth() {
           "Create your ChatWidget AI account and start providing intelligent customer service today" : 
           "Sign in to ChatWidget AI to manage your AI-powered customer service widget"
         } />
-        <meta name="keywords" content="chat widget, AI customer service, business automation, customer support" />
-        <meta property="og:title" content={isSignUp ? 'Sign Up - ChatWidget AI' : 'Sign In - ChatWidget AI'} />
-        <meta property="og:description" content="Transform your customer service with AI-powered chat solutions" />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://chatwidgetai.netlify.app" />
-        <link rel="canonical" href="https://chatwidgetai.netlify.app/auth" />
       </Helmet>
 
       <div className="min-h-screen flex flex-col md:flex-row">
         {/* Hero Section */}
-        <div className="w-full md:w-1/2 bg-gradient-to-br from-indigo-600 to-purple-700 p-8 md:p-12 flex flex-col justify-center">
+        <div className="w-full md:w-1/2 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 p-8 md:p-12 flex flex-col justify-center">
           <div className="max-w-xl mx-auto text-white">
             <div className="flex items-center space-x-3 mb-8">
               <MessageCircle className="h-10 w-10" />
               <h1 className="text-3xl font-bold">ChatWidget AI</h1>
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Transform Your Website with Intelligent Customer Service
+            
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+              Transform Your Customer Service with AI Intelligence
             </h2>
-            <p className="text-lg md:text-xl text-indigo-100 mb-8">
-              Engage visitors, boost conversions, and provide 24/7 support with our AI-powered chat widget.
+            
+            <p className="text-xl text-indigo-100 mb-12">
+              Engage visitors 24/7, boost conversions, and provide instant support with our advanced AI-powered chat solution.
             </p>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
+
+            {/* Feature Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="flex items-start space-x-4">
                 <div className="bg-white/10 p-2 rounded-lg">
-                  <Sparkles className="h-6 w-6" />
+                  <Bot className="h-6 w-6" />
                 </div>
-                <p className="text-lg">Customizable AI responses</p>
+                <div>
+                  <h3 className="font-semibold mb-1">Smart AI Responses</h3>
+                  <p className="text-indigo-200">Natural conversations that understand context and intent</p>
+                </div>
               </div>
-              <div className="flex items-center space-x-3">
+
+              <div className="flex items-start space-x-4">
                 <div className="bg-white/10 p-2 rounded-lg">
-                  <MessageCircle className="h-6 w-6" />
+                  <BarChart2 className="h-6 w-6" />
                 </div>
-                <p className="text-lg">24/7 automated customer support</p>
+                <div>
+                  <h3 className="font-semibold mb-1">Live Analytics</h3>
+                  <p className="text-indigo-200">Track engagement and conversion metrics in real-time</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-white/10 p-2 rounded-lg">
+                  <Palette className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Custom Styling</h3>
+                  <p className="text-indigo-200">Match your brand with customizable themes</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="bg-white/10 p-2 rounded-lg">
+                  <Clock className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">24/7 Support</h3>
+                  <p className="text-indigo-200">Always-on automated customer service</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Trust Indicators */}
+            <div className="border-t border-indigo-500/30 pt-8">
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center">
+                  <Shield className="h-5 w-5 text-indigo-300 mr-2" />
+                  <span className="text-indigo-200">Secure & Private</span>
+                </div>
+                <div className="flex items-center">
+                  <Settings className="h-5 w-5 text-indigo-300 mr-2" />
+                  <span className="text-indigo-200">Easy Setup</span>
+                </div>
+                <div className="flex items-center">
+                  <Sparkles className="h-5 w-5 text-indigo-300 mr-2" />
+                  <span className="text-indigo-200">AI-Powered</span>
+                </div>
               </div>
             </div>
           </div>
@@ -84,11 +127,11 @@ export default function Auth() {
           <div className="w-full max-w-md space-y-8">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 text-center">
-                {isSignUp ? 'Create your account' : 'Welcome back'}
+                {isSignUp ? 'Get started today' : 'Welcome back'}
               </h2>
               <p className="mt-2 text-center text-gray-600">
                 {isSignUp
-                  ? 'Start your journey with ChatWidget AI'
+                  ? 'Create your account to start engaging customers'
                   : 'Sign in to your account to continue'}
               </p>
             </div>
@@ -137,7 +180,7 @@ export default function Auth() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? 'Processing...' : (isSignUp ? 'Create account' : 'Sign in')}
                 </button>
