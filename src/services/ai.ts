@@ -13,7 +13,7 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 500; // Limit response length
+  private readonly maxResponseLength = 150; // Reduced max length for concise responses
 
   constructor(context: ChatContext) {
     this.context = this.sanitizeContext(context);
@@ -21,7 +21,7 @@ export class AIService {
       history: [
         {
           role: 'user',
-          parts: `You are a helpful sales representative for ${this.context.businessName}. 
+          parts: `You are a friendly sales representative for ${this.context.businessName}. 
           Your name is ${this.context.representativeName}.
           
           CRITICAL INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
@@ -29,20 +29,20 @@ export class AIService {
           ${this.context.businessInfo}
           
           2. NEVER make up or invent any information not provided above
-          3. If asked about something not in the business information, say: "I apologize, but I don't have that specific information. Let me focus on what I can tell you about our available offerings."
-          4. NEVER discuss prices unless specifically mentioned in the business information
-          5. Keep responses professional, concise and focused on helping customers
-          6. NEVER share personal opinions or make promises not backed by the business information
-          7. If asked about competitors, politely redirect to discussing our offerings
-          8. NEVER use special characters, emojis, or formatting in responses
-          9. Maintain a helpful but professional tone
-          10. NEVER discuss sensitive topics or provide medical/legal advice
+          3. Keep all responses under 2 sentences
+          4. Use a casual, friendly tone like you're texting
+          5. Use line breaks to make responses more readable
+          6. If asked about something not in the business info, say: "Sorry, I don't have that info! Let me tell you what we do have though..."
+          7. Focus on the most relevant products/services for the customer's needs
+          8. Be enthusiastic but not overly sales-y
+          9. Write like a real person having a chat
+          10. Keep it simple and direct
           
-          Remember: You are ${this.context.representativeName} from ${this.context.businessName}. Stay focused on helping customers with the provided business information only.`,
+          Remember: You're ${this.context.representativeName} having a casual chat with customers about ${this.context.businessName}.`,
         },
         {
           role: 'model',
-          parts: `I understand my role as ${this.context.representativeName} from ${this.context.businessName}. I will strictly use only the provided business information and follow all instructions carefully.`,
+          parts: `Got it! I'll keep things short, friendly and focused on helping customers as ${this.context.representativeName} from ${this.context.businessName}.`,
         },
       ],
     });
@@ -57,74 +57,64 @@ export class AIService {
   }
 
   private sanitizeText(text: string): string {
-    // Remove special characters, emojis, and excessive whitespace
     return text
-      .replace(/[^\w\s.,!?-]/g, '') // Only allow basic punctuation and alphanumeric characters
-      .replace(/\s+/g, ' ')         // Normalize whitespace
+      .replace(/[^\w\s.,!?-]/g, '')
+      .replace(/\s+/g, ' ')
       .trim();
   }
 
   private sanitizeResponse(response: string): string {
-    // Clean the response
-    let sanitized = this.sanitizeText(response);
+    let sanitized = response
+      .trim()
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .replace(/([.!?])\s*/g, '$1\n') // Add line breaks after punctuation
+      .replace(/^[a-z]/, c => c.toUpperCase()); // Capitalize first letter
     
     // Enforce length limit
     if (sanitized.length > this.maxResponseLength) {
-      sanitized = sanitized.substring(0, this.maxResponseLength) + '...';
-    }
-
-    // Ensure response starts with a capital letter and ends with proper punctuation
-    sanitized = sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
-    if (!sanitized.match(/[.!?]$/)) {
-      sanitized += '.';
+      sanitized = sanitized.substring(0, this.maxResponseLength).replace(/[^.!?]+$/, '') + '...';
     }
 
     return sanitized;
   }
 
   private validateResponse(response: string): boolean {
-    // Check for potential red flags
     const redFlags = [
-      'I apologize, but I cannot',
-      'I cannot provide',
-      'I do not have access',
+      'I apologize',
+      'I cannot',
+      'I do not have',
       'I am an AI',
       'As an AI',
     ];
 
-    return !redFlags.some(flag => response.includes(flag));
+    return !redFlags.some(flag => response.toLowerCase().includes(flag.toLowerCase()));
   }
 
   async sendMessage(message: string): Promise<string> {
     try {
-      // Sanitize input message
       const sanitizedMessage = this.sanitizeText(message);
-      
-      // Get response from AI
       const result = await this.chat.sendMessage(sanitizedMessage);
       const response = await result.response;
       let responseText = response.text();
 
-      // Sanitize and validate response
       responseText = this.sanitizeResponse(responseText);
       
-      // If response is invalid, provide a fallback
       if (!this.validateResponse(responseText)) {
-        return `I'd be happy to tell you about our offerings at ${this.context.businessName}. What specific information can I provide?`;
+        return `Hey! Let me tell you about what we've got at ${this.context.businessName}. What are you looking for?`;
       }
 
       return responseText;
     } catch (error) {
       console.error('Error sending message to Gemini:', error);
-      return 'I apologize, but I encountered an error. How else can I assist you with our products or services?';
+      return `Hey there! Sorry for the hiccup. What can I tell you about our products?`;
     }
   }
 
   getInitialGreeting(): string {
-    return `Hello! I'm ${this.context.representativeName} from ${this.context.businessName}. How can I assist you today?`;
+    return `Hey! I'm ${this.context.representativeName}.\nWhat can I help you find at ${this.context.businessName} today?`;
   }
 
   static getFormPrompt(): string {
-    return "Would you like to share your contact information? This will help us provide better assistance with your inquiry.";
+    return "Want to share your contact info? It'll help me serve you better!";
   }
 }
