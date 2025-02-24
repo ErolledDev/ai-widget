@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { v4 as uuidv4 } from 'uuid';
+import { createClient } from '@supabase/supabase-js';
 
 // Initialize the Gemini API client
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
@@ -9,6 +10,7 @@ interface ChatContext {
   businessName: string;
   representativeName: string;
   businessInfo: string;
+  userId?: string;
 }
 
 export class AIService {
@@ -64,6 +66,7 @@ export class AIService {
       businessName: this.sanitizeText(context.businessName),
       representativeName: this.sanitizeText(context.representativeName),
       businessInfo: this.sanitizeText(context.businessInfo),
+      userId: context.userId
     };
   }
 
@@ -75,19 +78,18 @@ export class AIService {
   }
 
   private formatResponse(text: string): string {
-    // Allow specific special characters and emojis
     return text
-      .replace(/\*\*?(.*?)\*\*?/g, '<em>$1</em>') // Convert markdown emphasis to HTML
-      .replace(/\n/g, '<br>') // Convert newlines to HTML breaks
+      .replace(/\*\*?(.*?)\*\*?/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>')
       .trim();
   }
 
   private sanitizeResponse(response: string): string {
     let sanitized = response
       .trim()
-      .replace(/\s+/g, ' ') // Normalize spaces
-      .replace(/([.!?])\s*/g, '$1\n') // Add line breaks after punctuation
-      .replace(/^[a-z]/, c => c.toUpperCase()); // Capitalize first letter
+      .replace(/\s+/g, ' ')
+      .replace(/([.!?])\s*/g, '$1\n')
+      .replace(/^[a-z]/, c => c.toUpperCase());
     
     if (sanitized.length > this.maxResponseLength) {
       sanitized = sanitized.substring(0, this.maxResponseLength).replace(/[^.!?]+$/, '') + '...';
@@ -133,6 +135,8 @@ export class AIService {
   }
 
   private async updateAnalytics(message: string, response: string) {
+    if (!this.context.userId) return; // Skip analytics if no user ID
+
     try {
       const supabase = createClient(
         import.meta.env.VITE_SUPABASE_URL,
@@ -143,6 +147,7 @@ export class AIService {
         .from('chat_analytics')
         .select('id')
         .eq('visitor_id', this.visitorId)
+        .eq('user_id', this.context.userId)
         .single();
 
       if (existingSession) {
@@ -159,6 +164,7 @@ export class AIService {
         await supabase
           .from('chat_analytics')
           .insert({
+            user_id: this.context.userId,
             visitor_id: this.visitorId,
             session_start: this.sessionStartTime.toISOString(),
             first_message: message,
