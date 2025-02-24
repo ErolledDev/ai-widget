@@ -11,41 +11,112 @@ interface WidgetSettings {
   businessInfo: string;
 }
 
+const defaultSettings: WidgetSettings = {
+  color: '#4F46E5',
+  businessName: '',
+  representativeName: '',
+  businessInfo: ''
+};
+
 export default function WidgetSettings() {
   const { user, supabase } = useAuth();
-  const [settings, setSettings] = useState<WidgetSettings>({
-    color: '#4F46E5',
-    businessName: '',
-    representativeName: '',
-    businessInfo: ''
-  });
+  const [settings, setSettings] = useState<WidgetSettings>(defaultSettings);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [showTestWidget, setShowTestWidget] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchSettings() {
+      if (!user?.id) return;
+
       try {
+        setError(null);
+        setIsLoading(true);
+
+        // First try to get existing settings
         const { data, error } = await supabase
           .from('widget_settings')
           .select('settings')
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
-        if (data?.settings) {
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // Settings don't exist yet, create them with defaults
+            const { error: insertError } = await supabase
+              .from('widget_settings')
+              .insert({
+                user_id: user.id,
+                settings: defaultSettings
+              });
+
+            if (insertError) {
+              console.error('Error creating default settings:', insertError);
+              throw new Error('Failed to create default settings');
+            }
+
+            if (isMounted) {
+              setSettings(defaultSettings);
+            }
+          } else {
+            throw error;
+          }
+        } else if (data?.settings && isMounted) {
           setSettings(data.settings);
         }
-      } catch (error) {
-        console.error('Error fetching settings:', error);
+      } catch (err: any) {
+        console.error('Error fetching settings:', err);
+        if (isMounted) {
+          setError('Failed to load settings. Please try refreshing the page.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     }
 
-    if (user?.id) {
-      fetchSettings();
-    }
+    fetchSettings();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user?.id, supabase]);
+
+  const handleSave = async () => {
+    if (!user?.id) return;
+
+    setIsSaving(true);
+    setSaveStatus('idle');
+    setError(null);
+
+    try {
+      const { error } = await supabase
+        .from('widget_settings')
+        .upsert({
+          user_id: user.id,
+          settings: settings
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err: any) {
+      console.error('Error saving settings:', err);
+      setSaveStatus('error');
+      setError('Failed to save settings. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const scriptCode = `<script src="https://chatwidgetai.netlify.app/widget.js"></script>
 <script>
@@ -54,35 +125,35 @@ export default function WidgetSettings() {
   });
 </script>`;
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveStatus('idle');
-    try {
-      const { error } = await supabase
-        .from('widget_settings')
-        .upsert({
-          user_id: user?.id,
-          settings: settings
-        });
-
-      if (error) throw error;
-      setSaveStatus('success');
-      
-      // Auto-hide success status after 3 seconds
-      setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      setSaveStatus('error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const copyToClipboard = () => {
     navigator.clipboard.writeText(scriptCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-8">
+          {error}
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-indigo-600 hover:text-indigo-500"
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -162,7 +233,9 @@ export default function WidgetSettings() {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+              isSaving ? 'opacity-75 cursor-not-allowed' : ''
+            }`}
           >
             {isSaving ? 'Saving...' : 'Save Settings'}
           </button>
@@ -178,7 +251,7 @@ export default function WidgetSettings() {
             <span className="text-green-600">Settings saved successfully!</span>
           )}
           {saveStatus === 'error' && (
-            <span className="text-red-600">Error saving settings</span>
+            <span className="text-red-600">{error || 'Error saving settings'}</span>
           )}
         </div>
 
