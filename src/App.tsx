@@ -1,8 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { MessageCircle, BarChart3 } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
+import Widget from './pages/Widget';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/widget/:userId" element={<Widget />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>

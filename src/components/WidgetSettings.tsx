@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { useAuth } from '../contexts/AuthContext';
 import { Copy, Check } from 'lucide-react';
+import ChatWidget from './ChatWidget';
 
 interface WidgetSettings {
   color: string;
@@ -11,7 +12,7 @@ interface WidgetSettings {
 }
 
 export default function WidgetSettings() {
-  const { user } = useAuth();
+  const { user, supabase } = useAuth();
   const [settings, setSettings] = useState<WidgetSettings>({
     color: '#4F46E5',
     businessName: '',
@@ -20,8 +21,33 @@ export default function WidgetSettings() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showTestWidget, setShowTestWidget] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const scriptCode = `<script src="https://widegetai.netlify.app/${user?.id}/chat.js"></script>
+  useEffect(() => {
+    async function fetchSettings() {
+      try {
+        const { data, error } = await supabase
+          .from('widget_settings')
+          .select('settings')
+          .eq('user_id', user?.id)
+          .single();
+
+        if (error) throw error;
+        if (data?.settings) {
+          setSettings(data.settings);
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error);
+      }
+    }
+
+    if (user?.id) {
+      fetchSettings();
+    }
+  }, [user?.id, supabase]);
+
+  const scriptCode = `<script src="https://chatwidgetai.netlify.app/widget.js"></script>
 <script>
   new BusinessChatPlugin({
     uid: '${user?.id}'
@@ -30,9 +56,23 @@ export default function WidgetSettings() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveStatus('idle');
     try {
-      // TODO: Save settings to Supabase
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulated save
+      const { error } = await supabase
+        .from('widget_settings')
+        .upsert({
+          user_id: user?.id,
+          settings: settings
+        });
+
+      if (error) throw error;
+      setSaveStatus('success');
+      
+      // Auto-hide success status after 3 seconds
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setSaveStatus('error');
     } finally {
       setIsSaving(false);
     }
@@ -118,13 +158,29 @@ export default function WidgetSettings() {
       </div>
 
       <div className="flex justify-between items-center">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          {isSaving ? 'Saving...' : 'Save Settings'}
-        </button>
+        <div className="flex space-x-4 items-center">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {isSaving ? 'Saving...' : 'Save Settings'}
+          </button>
+
+          <button
+            onClick={() => setShowTestWidget(!showTestWidget)}
+            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            {showTestWidget ? 'Hide Test Widget' : 'Test Widget'}
+          </button>
+
+          {saveStatus === 'success' && (
+            <span className="text-green-600">Settings saved successfully!</span>
+          )}
+          {saveStatus === 'error' && (
+            <span className="text-red-600">Error saving settings</span>
+          )}
+        </div>
 
         <div className="relative">
           <button
@@ -137,24 +193,9 @@ export default function WidgetSettings() {
         </div>
       </div>
 
-      <div className="mt-8 bg-gray-50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-900 mb-2">Widget Preview</h3>
-        <div
-          className="border-2 rounded-lg p-4"
-          style={{ borderColor: settings.color }}
-        >
-          <div className="flex items-center space-x-2 mb-4">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: settings.color }}
-            />
-            <span className="font-medium">{settings.businessName || 'Your Business'}</span>
-          </div>
-          <div className="text-sm text-gray-600">
-            Preview of how your chat widget will appear on your website
-          </div>
-        </div>
-      </div>
+      {showTestWidget && (
+        <ChatWidget settings={settings} isTest={true} />
+      )}
     </div>
   );
 }
