@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { v4 as uuidv4 } from 'uuid';
 
 // Initialize the Gemini API client
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
@@ -14,9 +15,16 @@ export class AIService {
   private chat;
   private context: ChatContext;
   private readonly maxResponseLength = 150;
+  private visitorId: string;
+  private sessionStartTime: Date;
+  private messageCount: number = 0;
 
   constructor(context: ChatContext) {
     this.context = this.sanitizeContext(context);
+    this.visitorId = uuidv4();
+    this.sessionStartTime = new Date();
+    this.messageCount = 0;
+    
     this.chat = model.startChat({
       history: [
         {
@@ -102,6 +110,7 @@ export class AIService {
 
   async sendMessage(message: string): Promise<string> {
     try {
+      this.messageCount++;
       const sanitizedMessage = this.sanitizeText(message);
       const result = await this.chat.sendMessage(sanitizedMessage);
       const response = await result.response;
@@ -113,10 +122,52 @@ export class AIService {
         return `Hey! Let me tell you about what we've got at ${this.context.businessName} 😊<br>What are you looking for?`;
       }
 
+      // Update analytics
+      await this.updateAnalytics(message, responseText);
+
       return responseText;
     } catch (error) {
       console.error('Error sending message to Gemini:', error);
       return `Hey there! Sorry for the hiccup 😅<br>What can I tell you about our products?`;
+    }
+  }
+
+  private async updateAnalytics(message: string, response: string) {
+    try {
+      const supabase = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY
+      );
+
+      const { data: existingSession } = await supabase
+        .from('chat_analytics')
+        .select('id')
+        .eq('visitor_id', this.visitorId)
+        .single();
+
+      if (existingSession) {
+        await supabase
+          .from('chat_analytics')
+          .update({
+            messages_count: this.messageCount,
+            last_message: message,
+            session_end: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSession.id);
+      } else {
+        await supabase
+          .from('chat_analytics')
+          .insert({
+            visitor_id: this.visitorId,
+            session_start: this.sessionStartTime.toISOString(),
+            first_message: message,
+            last_message: message,
+            messages_count: this.messageCount
+          });
+      }
+    } catch (error) {
+      console.error('Error updating analytics:', error);
     }
   }
 
@@ -126,5 +177,9 @@ export class AIService {
 
   static getFormPrompt(): string {
     return "Want to share your contact info? It'll help me serve you better! 😊";
+  }
+
+  getVisitorId(): string {
+    return this.visitorId;
   }
 }
