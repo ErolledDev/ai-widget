@@ -67,34 +67,36 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
 
   return (
     <div 
-      className={`fixed bottom-6 ${isTest ? 'right-[320px]' : 'right-6'} z-[999999] flex flex-col items-end font-sans`}
+      className={`fixed bottom-4 sm:bottom-6 ${isTest ? 'right-[320px]' : 'right-4 sm:right-6'} z-[999999] flex flex-col items-end font-sans`}
       style={widgetStyles}
     >
       {isOpen && (
-        <div className="mb-4 w-[350px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 animate-slideUp overflow-hidden">
+        <div className="mb-4 w-[calc(100vw-2rem)] sm:w-[350px] max-w-[350px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 animate-slideUp overflow-hidden">
           {/* Header */}
           <div 
-            className="p-4 flex justify-between items-center border-b relative"
+            className="p-3 sm:p-4 flex justify-between items-center border-b relative"
             style={{ 
               background: `linear-gradient(135deg, ${settings.color}, ${settings.color}dd)`,
               boxShadow: isScrolled ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
               transition: 'box-shadow 0.3s ease'
             }}
           >
-            <div className="flex items-center space-x-3">
-              <div className="bg-white/10 p-2 rounded-lg">
-                <MessageCircle className="h-5 w-5 text-white" />
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+              <div className="bg-white/10 p-1.5 sm:p-2 rounded-lg flex-shrink-0">
+                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               </div>
-              <div>
-                <span className="font-medium text-white block text-[15px]">{settings.businessName}</span>
-                <span className="text-xs text-white/80">Online</span>
+              <div className="min-w-0">
+                <span className="font-medium text-white block text-[13px] sm:text-[15px] truncate">
+                  {settings.businessName}
+                </span>
+                <span className="text-[11px] sm:text-xs text-white/80">Online</span>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"
+              className="text-white/80 hover:text-white hover:bg-white/10 p-1.5 sm:p-2 rounded-full transition-colors ml-2 flex-shrink-0"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
 
@@ -102,7 +104,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
           <div 
             ref={messagesContainerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[500px] scroll-smooth"
+            className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[400px] sm:max-h-[500px] scroll-smooth"
             style={{ backgroundColor: '#F8FAFC' }}
           >
             {messages.map((msg, index) => (
@@ -111,7 +113,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-messageIn`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 leading-relaxed text-[15px] ${
+                  className={`max-w-[85%] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 leading-relaxed text-[13px] sm:text-[15px] ${
                     msg.role === 'user'
                       ? 'bg-[var(--chat-primary-color)] text-white'
                       : 'bg-white text-gray-800 border border-gray-100 shadow-sm'
@@ -135,10 +137,10 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
             ))}
             {isLoading && (
               <div className="flex justify-start animate-messageIn">
-                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm flex space-x-2 border border-gray-100">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
+                <div className="bg-white rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm flex space-x-1.5 sm:space-x-2 border border-gray-100">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
                 </div>
               </div>
             )}
@@ -149,32 +151,32 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
           {isScrolled && (
             <button
               onClick={scrollToBottom}
-              className="absolute bottom-20 right-4 bg-white shadow-lg rounded-full p-2 text-gray-600 hover:bg-gray-50 transition-colors"
+              className="absolute bottom-16 sm:bottom-20 right-3 sm:right-4 bg-white shadow-lg rounded-full p-1.5 sm:p-2 text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           )}
 
           {/* Input form */}
-          <form onSubmit={handleSubmit} className="p-4 border-t bg-white">
+          <form onSubmit={handleSubmit} className="p-3 sm:p-4 border-t bg-white">
             <div className="flex space-x-2">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-[15px] focus:outline-none focus:border-[var(--chat-primary-color)] focus:ring-1 focus:ring-[var(--chat-primary-color)] transition-colors"
+                className="flex-1 rounded-xl border border-gray-200 px-3 sm:px-4 py-1.5 sm:py-2 text-[13px] sm:text-[15px] focus:outline-none focus:border-[var(--chat-primary-color)] focus:ring-1 focus:ring-[var(--chat-primary-color)] transition-colors"
               />
               <button
                 type="submit"
                 disabled={isLoading}
-                className="p-2 rounded-xl text-white flex items-center justify-center w-12 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-75 disabled:scale-100 disabled:cursor-not-allowed"
+                className="p-1.5 sm:p-2 rounded-xl text-white flex items-center justify-center w-10 sm:w-12 transition-all transform hover:scale-105 active:scale-95 disabled:opacity-75 disabled:scale-100 disabled:cursor-not-allowed"
                 style={{ backgroundColor: settings.color }}
               >
                 {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                 )}
               </button>
             </div>
@@ -186,14 +188,14 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className="relative rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 group"
+          className="relative rounded-2xl p-3 sm:p-4 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 group"
           style={{ backgroundColor: settings.color }}
         >
-          <MessageCircle className="h-6 w-6 transition-transform group-hover:rotate-12" />
+          <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-hover:rotate-12" />
           {hasNewMessage && (
             <>
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full animate-ping" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full" />
+              <span className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-red-500 rounded-full animate-ping" />
+              <span className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-red-500 rounded-full" />
             </>
           )}
         </button>
