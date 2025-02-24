@@ -42,29 +42,27 @@ export default function WidgetSettings() {
           .from('widget_settings')
           .select('settings')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (error) {
-          if (error.code === 'PGRST116') {
-            // Settings don't exist yet, create them with defaults
-            const { error: insertError } = await supabase
-              .from('widget_settings')
-              .insert([{
-                user_id: user.id,
-                settings: defaultSettings
-              }])
-              .select()
-              .single();
+        if (error) throw error;
 
-            if (insertError) throw insertError;
+        if (!data) {
+          // Settings don't exist yet, create them with defaults
+          const { error: insertError } = await supabase
+            .from('widget_settings')
+            .insert([{
+              user_id: user.id,
+              settings: defaultSettings
+            }])
+            .select()
+            .single();
 
-            if (isMounted) {
-              setSettings(defaultSettings);
-            }
-          } else {
-            throw error;
+          if (insertError) throw insertError;
+
+          if (isMounted) {
+            setSettings(defaultSettings);
           }
-        } else if (data?.settings && isMounted) {
+        } else if (isMounted) {
           setSettings(data.settings);
         }
       } catch (err: any) {
@@ -99,10 +97,9 @@ export default function WidgetSettings() {
         .upsert({
           user_id: user.id,
           settings
-        }, {
-          onConflict: 'user_id'
         })
-        .select();
+        .select()
+        .single();
 
       if (error) throw error;
 
