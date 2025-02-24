@@ -124,7 +124,7 @@ class BusinessChatWidget {
 
         .chat-window {
           position: fixed !important;
-          bottom: 100px !important;
+          bottom: 24px !important;
           right: 24px !important;
           width: 350px !important;
           height: 500px !important;
@@ -287,6 +287,10 @@ class BusinessChatWidget {
         .typing-dot:nth-child(3) {
           animation-delay: 0.4s !important;
         }
+
+        .hidden {
+          display: none !important;
+        }
       `;
       document.head.appendChild(styles);
 
@@ -334,8 +338,15 @@ class BusinessChatWidget {
       `;
       
       // Add event listeners
-      button.onclick = () => this.toggleChat();
-      chatWindow.querySelector('.chat-close').onclick = () => this.toggleChat();
+      button.onclick = () => {
+        this.toggleChat();
+        button.classList.add('hidden');
+      };
+      
+      chatWindow.querySelector('.chat-close').onclick = () => {
+        this.toggleChat();
+        button.classList.remove('hidden');
+      };
       
       const sendButton = chatWindow.querySelector('.chat-send');
       const input = chatWindow.querySelector('.chat-input');
@@ -401,7 +412,6 @@ class BusinessChatWidget {
   toggleChat() {
     this.isOpen = !this.isOpen;
     const chatWindow = document.querySelector('.chat-window');
-    const button = document.querySelector('.chat-toggle-button');
     
     if (this.isOpen) {
       chatWindow.classList.add('open');
