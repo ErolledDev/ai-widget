@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { MessageCircle, BarChart3, LogOut } from 'lucide-react';
+import { MessageCircle, BarChart3, LogOut, Settings, Users, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import WidgetSettings from './WidgetSettings';
 import Analytics from './Analytics';
@@ -21,43 +21,47 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg">
-        <div className="h-16 flex items-center justify-center border-b">
+      <div className="w-64 bg-white shadow-lg flex flex-col">
+        <div className="h-16 flex items-center px-6 border-b border-gray-200">
           <MessageCircle className="h-8 w-8 text-indigo-600" />
-          <span className="ml-2 text-lg font-semibold">Chat Widget</span>
+          <span className="ml-3 text-lg font-semibold text-gray-900">ChatWidget AI</span>
         </div>
         
-        <nav className="mt-6">
+        <nav className="flex-1 px-4 py-6 space-y-1">
           <NavLink
             to="/dashboard/settings"
             className={({ isActive }) =>
-              `flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 ${
-                isActive ? 'bg-gray-50 border-r-4 border-indigo-600' : ''
+              `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                isActive 
+                  ? 'bg-indigo-50 text-indigo-600' 
+                  : 'text-gray-700 hover:bg-gray-50'
               }`
             }
           >
-            <MessageCircle className="h-5 w-5" />
-            <span className="ml-3">Widget Settings</span>
+            <Settings className="h-5 w-5 mr-3" />
+            Widget Settings
           </NavLink>
           
           <NavLink
             to="/dashboard/analytics"
             className={({ isActive }) =>
-              `flex items-center px-6 py-3 text-gray-700 hover:bg-gray-50 ${
-                isActive ? 'bg-gray-50 border-r-4 border-indigo-600' : ''
+              `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                isActive 
+                  ? 'bg-indigo-50 text-indigo-600' 
+                  : 'text-gray-700 hover:bg-gray-50'
               }`
             }
           >
-            <BarChart3 className="h-5 w-5" />
-            <span className="ml-3">Analytics</span>
+            <BarChart3 className="h-5 w-5 mr-3" />
+            Analytics
           </NavLink>
         </nav>
 
-        <div className="absolute bottom-0 w-64 p-4 border-t">
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
           >
             <LogOut className="h-4 w-4 mr-2" />
             {isLoggingOut ? 'Signing out...' : 'Sign out'}
@@ -66,12 +70,30 @@ export default function Dashboard() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-auto">
-        <Routes>
-          <Route path="settings" element={<WidgetSettings />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="*" element={<Navigate to="settings" replace />} />
-        </Routes>
+      <div className="flex-1">
+        {/* Header */}
+        <header className="bg-white shadow-sm">
+          <div className="h-16 flex items-center justify-between px-8">
+            <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
+            <div className="flex items-center space-x-4">
+              <button className="text-gray-500 hover:text-gray-600">
+                <Bell className="h-5 w-5" />
+              </button>
+              <button className="text-gray-500 hover:text-gray-600">
+                <Users className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Content area */}
+        <main className="p-8">
+          <Routes>
+            <Route path="settings" element={<WidgetSettings />} />
+            <Route path="analytics" element={<Analytics />} />
+            <Route path="*" element={<Navigate to="settings" replace />} />
+          </Routes>
+        </main>
       </div>
     </div>
   );
