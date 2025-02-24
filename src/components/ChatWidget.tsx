@@ -67,7 +67,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
 
   return (
     <div 
-      className={`fixed ${isTest ? 'right-[320px]' : 'right-6'} bottom-6 z-50 flex flex-col items-end`}
+      className={`fixed ${isTest ? 'right-[320px]' : 'right-6'} bottom-6 z-50 flex flex-col items-end font-sans`}
       style={widgetStyles}
     >
       {isOpen && (
@@ -86,7 +86,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                 <MessageCircle className="h-5 w-5 text-white" />
               </div>
               <div>
-                <span className="font-medium text-white block">{settings.businessName}</span>
+                <span className="font-medium text-white block text-[15px]">{settings.businessName}</span>
                 <span className="text-xs text-white/80">Online</span>
               </div>
             </div>
@@ -103,6 +103,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
             ref={messagesContainerRef}
             onScroll={handleScroll}
             className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[500px] scroll-smooth"
+            style={{ backgroundColor: '#F8FAFC' }}
           >
             {messages.map((msg, index) => (
               <div
@@ -110,22 +111,31 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-messageIn`}
               >
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 leading-relaxed bg-white text-gray-800 shadow-sm text-[15px] ${
                     msg.role === 'user'
-                      ? 'bg-gradient-to-br from-[var(--chat-primary-color)] to-[var(--chat-primary-color)/90] text-white'
-                      : 'bg-gray-100 text-gray-800'
-                  } shadow-sm`}
+                      ? 'border-2 border-[var(--chat-primary-color)]'
+                      : 'border border-gray-100'
+                  }`}
                   style={{
                     borderBottomRightRadius: msg.role === 'user' ? '4px' : undefined,
                     borderBottomLeftRadius: msg.role === 'assistant' ? '4px' : undefined
                   }}
-                  dangerouslySetInnerHTML={{ __html: msg.content }}
-                />
+                >
+                  <div 
+                    className="chat-message"
+                    dangerouslySetInnerHTML={{ 
+                      __html: msg.content.replace(/\n/g, '<br>').replace(
+                        /<br><br>/g, 
+                        '<br>'
+                      )
+                    }} 
+                  />
+                </div>
               </div>
             ))}
             {isLoading && (
               <div className="flex justify-start animate-messageIn">
-                <div className="bg-gray-100 rounded-2xl px-4 py-3 shadow-sm flex space-x-2">
+                <div className="bg-white rounded-2xl px-4 py-3 shadow-sm flex space-x-2 border border-gray-100">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
@@ -153,7 +163,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 rounded-xl border border-gray-200 px-4 py-2 focus:outline-none focus:border-[var(--chat-primary-color)] focus:ring-1 focus:ring-[var(--chat-primary-color)] transition-colors"
+                className="flex-1 rounded-xl border border-gray-200 px-4 py-2 text-[15px] focus:outline-none focus:border-[var(--chat-primary-color)] focus:ring-1 focus:ring-[var(--chat-primary-color)] transition-colors"
               />
               <button
                 type="submit"

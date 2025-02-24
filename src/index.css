@@ -53,3 +53,19 @@
 .scroll-smooth::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.2);
 }
+
+/* Chat message styles */
+.chat-message {
+  word-break: break-word;
+}
+
+.chat-message br {
+  display: block;
+  content: "";
+  margin-top: 0.5em;
+}
+
+.chat-message em {
+  font-style: normal;
+  font-weight: 600;
+}
