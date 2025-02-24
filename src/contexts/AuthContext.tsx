@@ -12,18 +12,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState(() => createClient(
     import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY,
+    import.meta.env.VITE_API_KEY, // Using the service role key for full access
     {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true
-      },
-      db: {
-        schema: 'public'
       }
     }
   ));
+
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
 

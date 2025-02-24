@@ -38,7 +38,6 @@ export default function WidgetSettings() {
         setError(null);
         setIsLoading(true);
 
-        // First try to get existing settings
         const { data, error } = await supabase
           .from('widget_settings')
           .select('settings')
@@ -50,15 +49,14 @@ export default function WidgetSettings() {
             // Settings don't exist yet, create them with defaults
             const { error: insertError } = await supabase
               .from('widget_settings')
-              .insert({
+              .insert([{
                 user_id: user.id,
                 settings: defaultSettings
-              });
+              }])
+              .select()
+              .single();
 
-            if (insertError) {
-              console.error('Error creating default settings:', insertError);
-              throw new Error('Failed to create default settings');
-            }
+            if (insertError) throw insertError;
 
             if (isMounted) {
               setSettings(defaultSettings);
@@ -100,10 +98,11 @@ export default function WidgetSettings() {
         .from('widget_settings')
         .upsert({
           user_id: user.id,
-          settings: settings
+          settings
         }, {
           onConflict: 'user_id'
-        });
+        })
+        .select();
 
       if (error) throw error;
 
