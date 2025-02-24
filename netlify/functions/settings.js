@@ -1,8 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Use the service role key for admin access
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.VITE_API_KEY
+  process.env.VITE_API_KEY, // This is the service role key
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 export async function handler(event) {
@@ -23,7 +30,8 @@ export async function handler(event) {
     return {
       statusCode: 405,
       headers: {
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ error: 'Method not allowed' })
     };
@@ -35,7 +43,8 @@ export async function handler(event) {
     return {
       statusCode: 400,
       headers: {
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ error: 'User ID is required' })
     };
@@ -48,7 +57,30 @@ export async function handler(event) {
       .eq('user_id', userId)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      return {
+        statusCode: error.code === 'PGRST116' ? 404 : 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ 
+          error: error.code === 'PGRST116' ? 'Settings not found' : 'Failed to fetch settings'
+        })
+      };
+    }
+
+    if (!data) {
+      return {
+        statusCode: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Settings not found' })
+      };
+    }
 
     return {
       statusCode: 200,
@@ -68,7 +100,7 @@ export async function handler(event) {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ error: 'Failed to fetch settings' })
+      body: JSON.stringify({ error: 'Internal server error' })
     };
   }
 }

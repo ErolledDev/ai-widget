@@ -3,7 +3,13 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.VITE_API_KEY
+  process.env.VITE_API_KEY,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
@@ -25,12 +31,27 @@ export async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
   try {
     const { message, userId, settings } = JSON.parse(event.body);
+
+    if (!message || !userId || !settings) {
+      return {
+        statusCode: 400,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'Missing required fields' }),
+      };
+    }
 
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     const chat = model.startChat({
@@ -66,13 +87,30 @@ export async function handler(event) {
     };
   } catch (error) {
     console.error('Error processing chat:', error);
+    
+    // Check if it's a Gemini API error
+    if (error.message?.includes('API key not valid')) {
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ 
+          error: 'Chat service is temporarily unavailable. Please try again later.'
+        }),
+      };
+    }
+
     return {
       statusCode: 500,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': '*'
       },
-      body: JSON.stringify({ error: 'Failed to process chat message' }),
+      body: JSON.stringify({ 
+        error: 'Failed to process chat message'
+      }),
     };
   }
 }
