@@ -5,6 +5,7 @@ class BusinessChatWidget {
     this.hasNewMessage = false;
     this.isLoading = false;
     this.messages = [];
+    this.showContactForm = false;
     this.init();
   }
 
@@ -270,6 +271,54 @@ class BusinessChatWidget {
           border-bottom-left-radius: 4px !important;
         }
 
+        .contact-form {
+          background-color: #F9FAFB !important;
+          padding: 16px !important;
+          border-radius: 12px !important;
+          margin: 8px 0 !important;
+          animation: messageIn 0.3s ease-out !important;
+        }
+
+        .contact-form label {
+          display: block !important;
+          font-size: 14px !important;
+          font-weight: 500 !important;
+          color: #374151 !important;
+          margin-bottom: 4px !important;
+        }
+
+        .contact-form input {
+          width: 100% !important;
+          padding: 8px 12px !important;
+          border: 1px solid #D1D5DB !important;
+          border-radius: 6px !important;
+          margin-bottom: 12px !important;
+          font-size: 14px !important;
+        }
+
+        .contact-form input:focus {
+          outline: none !important;
+          border-color: ${this.settings.color || '#4F46E5'} !important;
+          box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
+        }
+
+        .contact-form button {
+          width: 100% !important;
+          background-color: ${this.settings.color || '#4F46E5'} !important;
+          color: white !important;
+          padding: 8px 16px !important;
+          border: none !important;
+          border-radius: 6px !important;
+          font-size: 14px !important;
+          font-weight: 500 !important;
+          cursor: pointer !important;
+          transition: all 0.2s !important;
+        }
+
+        .contact-form button:hover {
+          opacity: 0.9 !important;
+        }
+
         .typing-indicator {
           display: flex !important;
           gap: 4px !important;
@@ -317,14 +366,14 @@ class BusinessChatWidget {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-6 w-6"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
             ${this.settings.businessName || 'Chat with us'}
           </h3>
-          <button class="chat-close">
+          <button class="chat-close" aria-label="Close chat">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         <div class="chat-messages"></div>
         <div class="chat-input-container">
-          <input type="text" class="chat-input" placeholder="Type your message...">
-          <button class="chat-send">
+          <input type="text" id="chatMessage" name="chatMessage" class="chat-input" placeholder="Type your message..." aria-label="Chat message">
+          <button class="chat-send" aria-label="Send message">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"></line>
               <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -336,6 +385,7 @@ class BusinessChatWidget {
       // Create toggle button
       const button = document.createElement('button');
       button.className = 'chat-toggle-button';
+      button.setAttribute('aria-label', 'Open chat');
       button.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-6 w-6"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
       `;
@@ -376,7 +426,7 @@ class BusinessChatWidget {
               userId: this.config.uid,
               settings: {
                 ...this.settings,
-                userId: this.config.uid // Add userId to settings for analytics
+                userId: this.config.uid
               }
             })
           });
@@ -388,6 +438,12 @@ class BusinessChatWidget {
           const data = await response.json();
           this.hideTypingIndicator();
           this.addMessage('assistant', data.response);
+
+          // Show contact form after a few messages
+          if (this.messages.length >= 3 && !this.showContactForm) {
+            this.showContactForm = true;
+            this.displayContactForm();
+          }
         } catch (error) {
           console.error('Failed to send message:', error);
           this.hideTypingIndicator();
@@ -413,6 +469,38 @@ class BusinessChatWidget {
       console.error('Failed to initialize chat widget:', error);
       throw error;
     }
+  }
+
+  displayContactForm() {
+    const messagesContainer = document.querySelector('.chat-messages');
+    const formDiv = document.createElement('div');
+    formDiv.className = 'contact-form';
+    formDiv.innerHTML = `
+      <form id="visitorContactForm">
+        <label for="visitorName">Name</label>
+        <input type="text" id="visitorName" name="visitorName" required>
+        
+        <label for="visitorEmail">Email</label>
+        <input type="email" id="visitorEmail" name="visitorEmail" required>
+        
+        <button type="submit">Submit</button>
+      </form>
+    `;
+
+    formDiv.querySelector('form').onsubmit = async (e) => {
+      e.preventDefault();
+      const name = formDiv.querySelector('#visitorName').value;
+      const email = formDiv.querySelector('#visitorEmail').value;
+      
+      if (name && email) {
+        await this.sendMessage(`Name: ${name}\nEmail: ${email}`);
+        formDiv.remove();
+        this.showContactForm = false;
+      }
+    };
+
+    messagesContainer.appendChild(formDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
   toggleChat() {
@@ -471,6 +559,8 @@ class BusinessChatWidget {
     messageDiv.textContent = content;
     messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    this.messages.push({ role, content });
 
     if (role === 'assistant' && !this.isOpen) {
       this.hasNewMessage = true;
