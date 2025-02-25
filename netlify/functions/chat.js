@@ -99,12 +99,21 @@ export async function handler(event) {
     }
 
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-pro',
+        generationConfig: {
+          maxOutputTokens: 100,
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 40
+        }
+      });
+
       const chat = model.startChat({
         history: [
           {
             role: 'user',
-            parts: `You are a helpful sales representative for ${settings.businessName}. 
+            parts: [{text: `You are a helpful sales representative for ${settings.businessName}. 
             Your name is ${settings.representativeName}.
             Here is the business information you should use to help customers:
             ${settings.businessInfo || 'No additional business information provided.'}
@@ -115,16 +124,22 @@ export async function handler(event) {
             - Use natural, conversational language
             - Provide relevant information from the business info
             - Stay professional and on-topic
-            - Avoid excessive emojis or informal language`,
+            - Avoid excessive emojis or informal language`}]
           },
           {
             role: 'model',
-            parts: 'Hi! How can I help you today?',
+            parts: [{text: 'Hi! How can I help you today?'}]
           },
         ],
+        generationConfig: {
+          maxOutputTokens: 100,
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 40
+        }
       });
 
-      const result = await chat.sendMessage(message);
+      const result = await chat.sendMessage([{text: message}]);
       const response = await result.response;
       const responseText = response.text();
 

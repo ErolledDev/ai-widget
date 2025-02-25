@@ -3,7 +3,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+const model = genAI.getGenerativeModel({ model: 'gemini-pro', generationConfig: {
+  maxOutputTokens: 100,
+  temperature: 0.7,
+  topP: 0.8,
+  topK: 40
+}});
 
 // Create a Supabase client with service role key for analytics
 const analyticsClient = createClient(
@@ -53,7 +58,7 @@ export class AIService {
       history: [
         {
           role: 'user',
-          parts: `You are a helpful sales representative for ${this.context.businessName}. 
+          parts: [{text: `You are a helpful sales representative for ${this.context.businessName}. 
           Your name is ${this.context.representativeName}.
           Here is the business information you should use to help customers:
           ${this.context.businessInfo}
@@ -69,13 +74,19 @@ export class AIService {
           Example responses:
           - "Hi! I can help you learn more about our products and services. What are you looking for?"
           - "We offer [specific product/service]. Would you like more details?"
-          - "I'd be happy to explain our [feature/service]. What would you like to know?"`,
+          - "I'd be happy to explain our [feature/service]. What would you like to know?"`}]
         },
         {
           role: 'model',
-          parts: 'Hi! How can I help you today?',
+          parts: [{text: 'Hi! How can I help you today?'}]
         },
       ],
+      generationConfig: {
+        maxOutputTokens: 100,
+        temperature: 0.7,
+        topP: 0.8,
+        topK: 40
+      }
     });
   }
 
@@ -108,7 +119,7 @@ export class AIService {
         return "Thank you for providing your contact information! How else can I assist you today?";
       }
 
-      const result = await this.chat.sendMessage(sanitizedMessage);
+      const result = await this.chat.sendMessage([{text: sanitizedMessage}]);
       const response = await result.response;
       const responseText = response.text();
       
