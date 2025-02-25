@@ -3,12 +3,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-pro', generationConfig: {
-  maxOutputTokens: 100,
-  temperature: 0.7,
-  topP: 0.8,
-  topK: 40
-}});
+const model = genAI.getGenerativeModel({ 
+  model: 'gemini-pro'
+});
 
 // Create a Supabase client with service role key for analytics
 const analyticsClient = createClient(
@@ -50,43 +47,38 @@ export class AIService {
       .then(response => response.json())
       .then(data => {
         this.ipAddress = data.ip;
-        this.updateAnalytics('', ''); // Initial analytics with IP
+        this.updateAnalytics('', '');
       })
       .catch(err => console.error('Failed to get IP:', err));
     
+    this.initializeChat();
+  }
+
+  private initializeChat() {
+    const prompt = `You are a helpful sales representative for ${this.context.businessName}. 
+    Your name is ${this.context.representativeName}.
+    Here is the business information you should use to help customers:
+    ${this.context.businessInfo}
+    
+    CRITICAL RULES:
+    - Keep responses under 150 characters
+    - Be helpful and friendly
+    - Use natural, conversational language
+    - Provide relevant information from the business info
+    - Stay professional and on-topic
+    - Avoid excessive emojis or informal language`;
+
     this.chat = model.startChat({
       history: [
         {
           role: 'user',
-          parts: [{text: `You are a helpful sales representative for ${this.context.businessName}. 
-          Your name is ${this.context.representativeName}.
-          Here is the business information you should use to help customers:
-          ${this.context.businessInfo}
-          
-          CRITICAL RULES:
-          - Keep responses under 150 characters
-          - Be helpful and friendly
-          - Use natural, conversational language
-          - Provide relevant information from the business info
-          - Stay professional and on-topic
-          - Avoid excessive emojis or informal language
-          
-          Example responses:
-          - "Hi! I can help you learn more about our products and services. What are you looking for?"
-          - "We offer [specific product/service]. Would you like more details?"
-          - "I'd be happy to explain our [feature/service]. What would you like to know?"`}]
+          parts: [{ text: prompt }]
         },
         {
           role: 'model',
-          parts: [{text: 'Hi! How can I help you today?'}]
-        },
-      ],
-      generationConfig: {
-        maxOutputTokens: 100,
-        temperature: 0.7,
-        topP: 0.8,
-        topK: 40
-      }
+          parts: [{ text: 'Hi! How can I help you today?' }]
+        }
+      ]
     });
   }
 
@@ -119,6 +111,10 @@ export class AIService {
         return "Thank you for providing your contact information! How else can I assist you today?";
       }
 
+      if (!this.chat) {
+        this.initializeChat();
+      }
+
       const result = await this.chat.sendMessage([{text: sanitizedMessage}]);
       const response = await result.response;
       const responseText = response.text();
@@ -134,7 +130,7 @@ export class AIService {
       return this.lastResponse;
     } catch (error) {
       console.error('Error in chat:', error);
-      return 'I apologize, but I encountered an error. How else can I assist you?';
+      return 'I apologize, but I encountered an error. Please try again in a moment.';
     }
   }
 
