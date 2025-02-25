@@ -24,12 +24,31 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
   const [showConsent, setShowConsent] = useState(true);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [hasSubmittedForm, setHasSubmittedForm] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, startChat, isLoading } = useAIChat({
     ...settings,
     userId: settings.userId
   });
+
+  // Load persisted state from localStorage
+  useEffect(() => {
+    const persistedState = localStorage.getItem('chatWidgetState');
+    if (persistedState) {
+      const state = JSON.parse(persistedState);
+      setConsentAccepted(state.consentAccepted || false);
+      setHasSubmittedForm(state.hasSubmittedForm || false);
+    }
+  }, []);
+
+  // Save state to localStorage
+  useEffect(() => {
+    localStorage.setItem('chatWidgetState', JSON.stringify({
+      consentAccepted,
+      hasSubmittedForm
+    }));
+  }, [consentAccepted, hasSubmittedForm]);
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -59,7 +78,9 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
 
     const currentMessage = message;
     setMessage('');
+    setIsTyping(true);
     await sendMessage(currentMessage);
+    setIsTyping(false);
 
     // Show contact form after 4 messages if not submitted yet
     if (messages.length >= 4 && !showContactForm && !hasSubmittedForm) {
@@ -79,6 +100,7 @@ Email: ${visitorEmail}`);
       
       setShowContactForm(false);
       setHasSubmittedForm(true);
+      localStorage.setItem('chatWidgetHasSubmittedForm', 'true');
       
       // Send thank you message
       await sendMessage("Thank you for providing your contact information! We'll be in touch soon. How else can I assist you today?");
@@ -98,6 +120,7 @@ Email: ${visitorEmail}`);
 
   const handleAcceptConsent = () => {
     setConsentAccepted(true);
+    localStorage.setItem('chatWidgetConsentAccepted', 'true');
     setShowConsent(false);
     setIsOpen(true);
   };
@@ -111,7 +134,9 @@ Email: ${visitorEmail}`);
         <div className="mb-4 w-[350px] h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 animate-slideUp overflow-hidden">
           {/* Header */}
           <div 
-            className="flex items-center justify-between px-4 py-3 border-b border-gray-100"
+            className={`flex items-center justify-between px-4 py-3 border-b border-gray-100 ${
+              isScrolled ? 'shadow-md' : ''
+            }`}
             style={{ background: settings.color }}
           >
             <div className="flex items-center space-x-2">
@@ -149,7 +174,7 @@ Email: ${visitorEmail}`);
                 </div>
               </div>
             ))}
-            {isLoading && (
+            {(isLoading || isTyping) && (
               <div className="flex justify-start animate-messageIn">
                 <div className="bg-gray-100 rounded-2xl px-4 py-2.5 flex space-x-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -190,7 +215,16 @@ Email: ${visitorEmail}`);
                     />
                   </div>
                   <p className="text-xs text-gray-500">
-                    By submitting this form, you agree to our privacy policy and terms of service.
+                    By submitting this form, you agree to our{' '}
+                    <a 
+                      href="https://chatwidgetai.netlify.app/privacy" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[var(--chat-primary-color)] hover:underline"
+                    >
+                      privacy policy
+                    </a>
+                    .
                   </p>
                   <button
                     type="submit"
@@ -220,12 +254,12 @@ Email: ${visitorEmail}`);
               />
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isTyping}
                 className="w-10 h-10 rounded-full text-white flex items-center justify-center transition-all transform hover:scale-105 disabled:opacity-75 disabled:scale-100 disabled:cursor-not-allowed"
                 style={{ backgroundColor: settings.color }}
                 aria-label="Send message"
               >
-                {isLoading ? (
+                {isLoading || isTyping ? (
                   <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2.5} />
                 ) : (
                   <Send className="h-5 w-5" strokeWidth={2.5} />
@@ -241,7 +275,16 @@ Email: ${visitorEmail}`);
         <div className="mb-4 w-[350px] bg-white rounded-lg shadow-lg p-4 animate-slideUp">
           <h4 className="font-medium text-gray-900 mb-2">Privacy Notice</h4>
           <p className="text-sm text-gray-600 mb-4">
-            By using this chat service, you agree that your messages and provided information may be stored and processed to improve our service. We respect your privacy and will protect your data according to our privacy policy.
+            By using this chat service, you agree that your messages and provided information may be stored and processed to improve our service. We respect your privacy and will protect your data according to our{' '}
+            <a 
+              href="https://chatwidgetai.netlify.app/privacy" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--chat-primary-color)] hover:underline"
+            >
+              privacy policy
+            </a>
+            .
           </p>
           <div className="flex justify-end space-x-2">
             <button
