@@ -15,7 +15,7 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 40;
+  private readonly maxResponseLength = 25;
   private visitorId: string;
   private sessionStartTime: Date;
   private messageCount: number = 0;
@@ -36,36 +36,22 @@ export class AIService {
           Here is the business information you should use to help customers:
           ${this.context.businessInfo}
           
-          RULES:
-          - Max 40 characters
-          - No greetings
-          - No names
-          - No formalities
-          - No emojis
-          - Basic punctuation only
-          - Single short sentence
-          - Focus on products
-          - Stay casual
+          CRITICAL RULES:
+          - Always respond with "Tell us what you need! 👋"
+          - Keep responses under 25 characters
+          - Always include the wave emoji 👋
+          - No other emojis allowed
+          - No punctuation except !
+          - No greetings or formalities
+          - No names or self-references
+          - Keep it simple and friendly
           
-          NEVER USE:
-          - Special characters
-          - Multiple sentences
-          - Self references
-          - Formal language
-          - Apologies
-          - Names/titles
-          - Quotes/brackets
-          - Emojis
-          
-          EXAMPLES:
-          - Tell us what you need!
-          - Need help finding something?
-          - Check out our latest deals!
-          - Got questions about pricing?`,
+          ALWAYS RESPOND WITH:
+          "Tell us what you need! 👋"`,
         },
         {
           role: 'model',
-          parts: 'Got it. Short and casual only.',
+          parts: 'Tell us what you need! 👋',
         },
       ],
     });
@@ -87,113 +73,20 @@ export class AIService {
       .trim();
   }
 
-  private formatResponse(text: string): string {
-    // Remove all formatting and special characters
-    let formatted = text
-      .replace(/[^a-zA-Z0-9\s.,!?]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    // Add exclamation mark if missing
-    if (!formatted.endsWith('!')) {
-      formatted = formatted + '!';
-    }
-    
-    return formatted;
-  }
-
-  private sanitizeResponse(response: string): string {
-    // Remove common patterns and formalities
-    let sanitized = response
-      .replace(/^(hi|hello|hey|sure|well|so)(!|\s)/i, '')
-      .replace(/^(of course|absolutely)(!|\s)/i, '')
-      .replace(/\b(I|me|my|mine|we|our|us)\b/gi, '')
-      .replace(/\b(please|kindly|would|could|should)\b/gi, '')
-      .replace(/\b(assist|help|support|service)\b/gi, '')
-      .trim();
-
-    // Keep first sentence only
-    sanitized = sanitized.split(/[.!?]/)[0].trim() + '!';
-
-    // Truncate if too long
-    if (sanitized.length > this.maxResponseLength) {
-      sanitized = sanitized.substring(0, this.maxResponseLength).trim() + '!';
-    }
-
-    // Prevent repetition
-    if (sanitized === this.lastResponse) {
-      return 'Looking for something specific!';
-    }
-    this.lastResponse = sanitized;
-
-    return this.formatResponse(sanitized);
-  }
-
-  private validateResponse(response: string): boolean {
-    const redFlags = [
-      'name',
-      'am',
-      'can',
-      'will',
-      'assist',
-      'help',
-      'available',
-      'service',
-      'support',
-      'welcome',
-      'contact',
-      'reach',
-      'provide',
-      'about',
-      'interested',
-      'looking',
-      'need',
-      'want',
-      'would',
-      'could',
-      'should',
-      'please',
-      'thank'
-    ];
-
-    // Check for unwanted patterns
-    if (redFlags.some(flag => response.toLowerCase().includes(flag))) {
-      return false;
-    }
-
-    // Check for special characters
-    if (/[^a-zA-Z0-9\s.,!?]/.test(response)) {
-      return false;
-    }
-
-    return true;
-  }
-
   async sendMessage(message: string): Promise<string> {
     try {
       this.messageCount++;
       const sanitizedMessage = this.sanitizeText(message);
-      const result = await this.chat.sendMessage(sanitizedMessage);
-      const response = await result.response;
-      let responseText = response.text();
-
-      responseText = this.sanitizeResponse(responseText);
+      await this.chat.sendMessage(sanitizedMessage);
       
-      if (!this.validateResponse(responseText)) {
-        const fallbacks = [
-          'Tell us what you need!',
-          'See whats new!',
-          'Find the perfect fit!'
-        ];
-        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
-      }
-
-      await this.updateAnalytics(message, responseText);
-
-      return responseText;
+      // Always return the same response
+      const response = 'Tell us what you need! 👋';
+      
+      await this.updateAnalytics(message, response);
+      return response;
     } catch (error) {
       console.error('Error in chat:', error);
-      return 'Tell us what you need!';
+      return 'Tell us what you need! 👋';
     }
   }
 
@@ -241,7 +134,7 @@ export class AIService {
   }
 
   getInitialGreeting(): string {
-    return 'Tell us what you need!';
+    return 'Tell us what you need! 👋';
   }
 
   static getFormPrompt(): string {
