@@ -50,7 +50,7 @@ export default function Guide() {
                       </pre>
                     </div>
                     <p className="text-gray-600 text-sm">
-                      Replace YOUR_USER_ID with the ID from your dashboard.
+                      Replace YOUR_USER_ID with the ID from your dashboard or Just click "Copy Widget Code" and paste to your website.
                     </p>
                   </div>
                 </section>
