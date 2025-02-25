@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+// Initialize Supabase client
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.VITE_API_KEY,
@@ -12,6 +13,7 @@ const supabase = createClient(
   }
 );
 
+// Initialize Google AI
 const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
 
 export async function handler(event) {
@@ -53,6 +55,25 @@ export async function handler(event) {
       };
     }
 
+    // Fetch settings from Supabase to verify user and get configuration
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('widget_settings')
+      .select('settings')
+      .eq('user_id', userId)
+      .single();
+
+    if (settingsError) {
+      console.error('Settings fetch error:', settingsError);
+      return {
+        statusCode: 404,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({ error: 'User settings not found' }),
+      };
+    }
+
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     const chat = model.startChat({
       history: [
@@ -69,12 +90,7 @@ export async function handler(event) {
           - Use natural, conversational language
           - Provide relevant information from the business info
           - Stay professional and on-topic
-          - Avoid excessive emojis or informal language
-          
-          Example responses:
-          - "Hi! I can help you learn more about our products and services. What are you looking for?"
-          - "We offer [specific product/service]. Would you like more details?"
-          - "I'd be happy to explain our [feature/service]. What would you like to know?"`,
+          - Avoid excessive emojis or informal language`,
         },
         {
           role: 'model',
