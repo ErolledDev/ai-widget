@@ -22,6 +22,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
   const [showContactForm, setShowContactForm] = useState(false);
   const [showConsent, setShowConsent] = useState(true);
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const [hasSubmittedForm, setHasSubmittedForm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, startChat, isLoading } = useAIChat(settings);
@@ -56,8 +57,8 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
     setMessage('');
     await sendMessage(currentMessage);
 
-    // Show contact form after 4 messages
-    if (messages.length >= 3 && !showContactForm) {
+    // Show contact form after 4 messages if not submitted yet
+    if (messages.length >= 3 && !showContactForm && !hasSubmittedForm) {
       setShowContactForm(true);
     }
   };
@@ -73,6 +74,10 @@ Name: ${visitorName}
 Email: ${visitorEmail}`);
       
       setShowContactForm(false);
+      setHasSubmittedForm(true);
+      
+      // Send thank you message
+      await sendMessage("Thank you for providing your contact information! We'll be in touch soon. How else can I assist you today?");
     } catch (error) {
       console.error('Error submitting contact form:', error);
     }
@@ -149,7 +154,7 @@ Email: ${visitorEmail}`);
                 </div>
               </div>
             )}
-            {showContactForm && (
+            {showContactForm && !hasSubmittedForm && (
               <div className="bg-gray-50 rounded-lg p-4 animate-messageIn">
                 <form onSubmit={handleContactSubmit} className="space-y-3">
                   <div>
