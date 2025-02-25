@@ -63,10 +63,10 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
       style={{ '--chat-primary-color': settings.color } as React.CSSProperties}
     >
       {isOpen && (
-        <div className="mb-4 w-[350px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 animate-slideUp overflow-hidden">
+        <div className="mb-4 w-[350px] h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 animate-slideUp overflow-hidden">
           {/* Header */}
           <div 
-            className="flex items-center justify-between p-4 border-b border-gray-100"
+            className="flex items-center justify-between px-4 py-3 border-b border-gray-100"
             style={{ background: settings.color }}
           >
             <div className="flex items-center space-x-2">
@@ -85,7 +85,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
           <div 
             ref={messagesContainerRef}
             onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[400px] scroll-smooth"
+            className="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth"
           >
             {messages.map((msg, index) => (
               <div
@@ -116,8 +116,8 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
           </div>
 
           {/* Input form */}
-          <form onSubmit={handleSubmit} className="p-4 border-t border-gray-100">
-            <div className="flex space-x-2">
+          <div className="p-4 border-t border-gray-100">
+            <form onSubmit={handleSubmit} className="flex space-x-2">
               <input
                 type="text"
                 value={message}
@@ -128,7 +128,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
               <button
                 type="submit"
                 disabled={isLoading}
-                className="p-2 rounded-full text-white flex items-center justify-center w-10 transition-all transform hover:scale-105 disabled:opacity-75 disabled:scale-100 disabled:cursor-not-allowed"
+                className="w-10 h-10 rounded-full text-white flex items-center justify-center transition-all transform hover:scale-105 disabled:opacity-75 disabled:scale-100 disabled:cursor-not-allowed"
                 style={{ backgroundColor: settings.color }}
               >
                 {isLoading ? (
@@ -137,8 +137,8 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                   <Send className="h-5 w-5" strokeWidth={2.5} />
                 )}
               </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
 
@@ -146,7 +146,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
       {!isOpen && (
         <button
           onClick={handleOpen}
-          className="relative p-4 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 rounded-full"
+          className="relative w-14 h-14 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 rounded-full flex items-center justify-center"
           style={{ backgroundColor: settings.color }}
         >
           <MessageCircle className="h-6 w-6" strokeWidth={2.5} />

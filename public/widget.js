@@ -76,55 +76,6 @@ class BusinessChatWidget {
           flex-direction: column !important;
           align-items: flex-end !important;
         }
-        
-        .chat-toggle-button {
-          background-color: ${this.settings.color || '#4F46E5'} !important;
-          color: white !important;
-          border: none !important;
-          border-radius: 50% !important;
-          width: 56px !important;
-          height: 56px !important;
-          cursor: pointer !important;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          transition: all 0.2s !important;
-          position: relative !important;
-          padding: 16px !important;
-        }
-
-        .chat-toggle-button:hover {
-          transform: scale(1.05) !important;
-          box-shadow: 0 6px 16px rgba(0,0,0,0.2) !important;
-        }
-
-        .chat-toggle-button svg {
-          width: 24px !important;
-          height: 24px !important;
-          stroke-width: 2.5 !important;
-        }
-
-        .notification-dot {
-          position: absolute !important;
-          top: -2px !important;
-          right: -2px !important;
-          width: 12px !important;
-          height: 12px !important;
-          background-color: #EF4444 !important;
-          border-radius: 50% !important;
-        }
-
-        .notification-dot-ping {
-          position: absolute !important;
-          top: -2px !important;
-          right: -2px !important;
-          width: 12px !important;
-          height: 12px !important;
-          background-color: #EF4444 !important;
-          border-radius: 50% !important;
-          animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite !important;
-        }
 
         .chat-window {
           position: fixed !important;
@@ -140,6 +91,44 @@ class BusinessChatWidget {
           overflow: hidden !important;
           border: 1px solid #E5E7EB !important;
           animation: slideUp 0.3s ease-out !important;
+        }
+
+        .chat-toggle-button {
+          background-color: ${this.settings.color || '#4F46E5'} !important;
+          color: white !important;
+          border: none !important;
+          border-radius: 50% !important;
+          width: 56px !important;
+          height: 56px !important;
+          cursor: pointer !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          transition: all 0.2s !important;
+          position: relative !important;
+        }
+
+        .chat-toggle-button svg {
+          width: 24px !important;
+          height: 24px !important;
+          stroke-width: 2.5 !important;
+        }
+
+        .chat-send {
+          width: 40px !important;
+          height: 40px !important;
+          border-radius: 50% !important;
+          padding: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        .chat-send svg {
+          width: 20px !important;
+          height: 20px !important;
+          stroke-width: 2.5 !important;
         }
 
         .chat-window.open {
