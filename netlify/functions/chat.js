@@ -59,35 +59,39 @@ export async function handler(event) {
         {
           role: 'user',
           parts: `You are a helpful sales representative for ${settings.businessName}. 
-          Your name is ${settings.representativeName}. 
+          Your name is ${settings.representativeName}.
           Here is the business information you should use to help customers:
           ${settings.businessInfo}
           
           CRITICAL RULES:
-          - Always respond with "Tell us what you need! 👋"
-          - Keep responses under 25 characters
-          - Always include the wave emoji 👋
-          - No other emojis allowed
-          - No punctuation except !
-          - No greetings or formalities
-          - No names or self-references
-          - Keep it simple and friendly
+          - Keep responses under 150 characters
+          - Be helpful and friendly
+          - Use natural, conversational language
+          - Provide relevant information from the business info
+          - Stay professional and on-topic
+          - Avoid excessive emojis or informal language
           
-          ALWAYS RESPOND WITH:
-          "Tell us what you need! 👋"`,
+          Example responses:
+          - "Hi! I can help you learn more about our products and services. What are you looking for?"
+          - "We offer [specific product/service]. Would you like more details?"
+          - "I'd be happy to explain our [feature/service]. What would you like to know?"`,
         },
         {
           role: 'model',
-          parts: 'Tell us what you need! 👋',
+          parts: 'Hi! How can I help you today?',
         },
       ],
     });
 
     const result = await chat.sendMessage(message);
     const response = await result.response;
+    const responseText = response.text();
 
-    // Force the consistent response regardless of AI output
-    const forcedResponse = "Tell us what you need! 👋";
+    // Ensure response isn't too long
+    const maxLength = 150;
+    const finalResponse = responseText.length > maxLength 
+      ? responseText.substring(0, maxLength) + '...'
+      : responseText;
 
     return {
       statusCode: 200,
@@ -95,7 +99,7 @@ export async function handler(event) {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
-      body: JSON.stringify({ response: forcedResponse }),
+      body: JSON.stringify({ response: finalResponse }),
     };
   } catch (error) {
     console.error('Error processing chat:', error);
