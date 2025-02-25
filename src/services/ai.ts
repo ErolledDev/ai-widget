@@ -2,9 +2,20 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 
+// Verify API key is available
+if (!import.meta.env.VITE_GEMINI_API_KEY) {
+  console.error('Gemini API key is not configured');
+}
+
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ 
-  model: 'gemini-pro'
+  model: 'gemini-pro',
+  generationConfig: {
+    temperature: 0.7,
+    topK: 40,
+    topP: 0.8,
+    maxOutputTokens: 100,
+  }
 });
 
 // Create a Supabase client with service role key for analytics
@@ -55,31 +66,47 @@ export class AIService {
   }
 
   private initializeChat() {
-    const prompt = `You are a helpful sales representative for ${this.context.businessName}. 
-    Your name is ${this.context.representativeName}.
-    Here is the business information you should use to help customers:
-    ${this.context.businessInfo}
-    
-    CRITICAL RULES:
-    - Keep responses under 150 characters
-    - Be helpful and friendly
-    - Use natural, conversational language
-    - Provide relevant information from the business info
-    - Stay professional and on-topic
-    - Avoid excessive emojis or informal language`;
+    try {
+      const prompt = `You are a helpful sales representative for ${this.context.businessName}. 
+      Your name is ${this.context.representativeName}.
+      Here is the business information you should use to help customers:
+      ${this.context.businessInfo}
+      
+      CRITICAL RULES:
+      - Keep responses under 150 characters
+      - Be helpful and friendly
+      - Use natural, conversational language
+      - Provide relevant information from the business info
+      - Stay professional and on-topic
+      - Avoid excessive emojis or informal language`;
 
-    this.chat = model.startChat({
-      history: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }]
-        },
-        {
-          role: 'model',
-          parts: [{ text: 'Hi! How can I help you today?' }]
+      console.log('Initializing chat with context:', {
+        businessName: this.context.businessName,
+        representativeName: this.context.representativeName
+      });
+
+      this.chat = model.startChat({
+        history: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }]
+          },
+          {
+            role: 'model',
+            parts: [{ text: 'Hi! How can I help you today?' }]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.8,
+          maxOutputTokens: 100,
         }
-      ]
-    });
+      });
+    } catch (error) {
+      console.error('Error initializing chat:', error);
+      throw new Error('Failed to initialize chat service');
+    }
   }
 
   private sanitizeContext(context: ChatContext): ChatContext {
@@ -101,6 +128,7 @@ export class AIService {
 
   async sendMessage(message: string): Promise<string> {
     try {
+      console.log('Sending message to AI:', message);
       this.messageCount++;
       const sanitizedMessage = this.sanitizeText(message);
       
@@ -112,10 +140,13 @@ export class AIService {
       }
 
       if (!this.chat) {
+        console.log('Chat not initialized, reinitializing...');
         this.initializeChat();
       }
 
+      console.log('Sending message to Gemini API...');
       const result = await this.chat.sendMessage([{text: sanitizedMessage}]);
+      console.log('Received response from Gemini API');
       const response = await result.response;
       const responseText = response.text();
       
@@ -123,6 +154,8 @@ export class AIService {
         ? responseText.substring(0, this.maxResponseLength) + '...'
         : responseText;
       
+      console.log('AI Response:', this.lastResponse);
+
       if (this.context.userId) {
         await this.updateAnalytics(message, this.lastResponse);
       }
@@ -130,6 +163,16 @@ export class AIService {
       return this.lastResponse;
     } catch (error) {
       console.error('Error in chat:', error);
+      // Check if it's a CORS error
+      if (error instanceof TypeError && error.message.includes('CORS')) {
+        console.error('CORS error detected:', error);
+        return 'Sorry, there was a CORS error. Please check your network settings.';
+      }
+      // Check if it's an API key error
+      if (error.message?.includes('API key')) {
+        console.error('API key error:', error);
+        return 'Sorry, there was an issue with the API key. Please contact support.';
+      }
       return 'I apologize, but I encountered an error. Please try again in a moment.';
     }
   }
