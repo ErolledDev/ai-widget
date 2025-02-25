@@ -26,11 +26,12 @@ export default function WidgetSettings() {
   const [copied, setCopied] = useState(false);
   const [showTestWidget, setShowTestWidget] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  // Fetch settings on component mount
+  // Fetch settings only once on component mount
   useEffect(() => {
     async function fetchSettings() {
-      if (!user?.id) return;
+      if (!user?.id || initialized) return;
       
       try {
         setIsLoading(true);
@@ -52,13 +53,13 @@ export default function WidgetSettings() {
         setError('Failed to load settings');
       } finally {
         setIsLoading(false);
+        setInitialized(true);
       }
     }
 
     fetchSettings();
-  }, [user, supabase]);
+  }, [user, supabase, initialized]);
 
-  // Save function with better error handling
   const handleSave = async () => {
     if (!user?.id) {
       setError('You must be logged in to save settings');
@@ -80,7 +81,6 @@ export default function WidgetSettings() {
     setError(null);
 
     try {
-      // First try to update
       const { error: upsertError } = await supabase
         .from('widget_settings')
         .upsert({

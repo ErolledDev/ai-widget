@@ -5,10 +5,12 @@ import { useAuth } from '../contexts/AuthContext';
 import WidgetSettings from './WidgetSettings';
 import Analytics from './Analytics';
 import Tutorial from './Tutorial';
+import AccountModal from './AccountModal';
 
 export default function Dashboard() {
   const { supabase } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -102,7 +104,10 @@ export default function Dashboard() {
               <button className="text-gray-500 hover:text-gray-600">
                 <Bell className="h-5 w-5" />
               </button>
-              <button className="text-gray-500 hover:text-gray-600">
+              <button 
+                onClick={() => setIsAccountModalOpen(true)}
+                className="text-gray-500 hover:text-gray-600"
+              >
                 <Users className="h-5 w-5" />
               </button>
             </div>
@@ -119,6 +124,12 @@ export default function Dashboard() {
           </Routes>
         </main>
       </div>
+
+      {/* Account Modal */}
+      <AccountModal 
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
+      />
     </div>
   );
 }
