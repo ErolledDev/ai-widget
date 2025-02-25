@@ -15,10 +15,11 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 120; // Shorter responses for more natural chat
+  private readonly maxResponseLength = 80; // Reduced for even shorter responses
   private visitorId: string;
   private sessionStartTime: Date;
   private messageCount: number = 0;
+  private lastResponse: string = '';
 
   constructor(context: ChatContext) {
     this.context = this.sanitizeContext(context);
@@ -32,38 +33,46 @@ export class AIService {
           role: 'user',
           parts: `You are ${this.context.representativeName}, a friendly sales rep at ${this.context.businessName}.
 
-          CRITICAL RULES - FOLLOW THESE EXACTLY:
-          1. Only use this business info:
+          CRITICAL RULES - FOLLOW EXACTLY:
+          1. Business Info:
           ${this.context.businessInfo}
           
-          2. Response rules:
-             - Keep responses under 100 characters when possible
-             - Use casual, friendly language like texting
-             - Write like a real person chatting
-             - Be enthusiastic but natural
-             - Focus on helping customers find what they need
+          2. Response Style:
+             - Keep responses under 80 characters
+             - Write like texting a friend
+             - Be casual and natural
+             - Focus on helping find products/services
+             - Never repeat customer's name
+             - Never sign messages
+             - Never mention your name again
           
           3. Formatting:
-             - Use *text* for emphasis (sparingly)
-             - Only use these emojis: 😊 👋 👍 🥰 ❤️
-             - No other special characters or symbols
+             - Use *text* for emphasis (max once per message)
+             - Only use these emojis (max one per message): 😊 👋 👍 
+             - No other special characters
           
-          4. Never:
-             - Make up information not provided
-             - Use formal language or business speak
-             - Apologize for being AI
-             - Use complex formatting
-             - Say as ${this.context.representativeName}
-             - Talk rude 
+          4. Forbidden:
+             - Mentioning being AI/assistant
+             - Formal language
+             - Apologizing
+             - Complex formatting
+             - Mentioning your name
+             - Repeating information
+             - Multiple emojis
+             - Excessive punctuation
+             - Long greetings/closings
           
-          5. If asked about unknown info:
-             Say "Let me tell you what we do have!" and redirect to known products/services
-          
-          Remember: You're having a casual chat to help customers find what they need.`,
+          5. Unknown Topics:
+             Redirect naturally to known products/services
+
+          6. Message Structure:
+             - Start directly, no greeting needed
+             - Get straight to the point
+             - End naturally, no formal closing`,
         },
         {
           role: 'model',
-          parts: `Got it! I'll keep things simple and friendly as ${this.context.representativeName}.`,
+          parts: 'Got it! Keeping it short and friendly.',
         },
       ],
     });
@@ -80,42 +89,56 @@ export class AIService {
 
   private sanitizeText(text: string): string {
     return text
-      .replace(/[^\w\s.,!?'-]/g, '') // Only allow basic punctuation
+      .replace(/[^\w\s.,!?'-]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
   }
 
   private formatResponse(text: string): string {
-    // Convert markdown-style formatting to HTML
     let formatted = text
       .replace(/\*\*?(.*?)\*\*?/g, '<em>$1</em>')
       .replace(/\n/g, '<br>')
-      // Only allow specific emojis
       .replace(/:[)]/g, '😊')
       .replace(/o\//g, '👋')
       .replace(/\+1/g, '👍')
       .trim();
     
-    // Remove any remaining special characters
     formatted = formatted.replace(/[^\w\s.,!?'😊👋👍\-<>\/br]/g, '');
     
     return formatted;
   }
 
   private sanitizeResponse(response: string): string {
+    // Remove common AI patterns
     let sanitized = response
-      .trim()
-      .replace(/\s+/g, ' ') // Remove extra spaces
-      .replace(/([.!?])\s*/g, '$1\n') // Add line breaks after punctuation
-      .replace(/^[a-z]/, c => c.toUpperCase()); // Capitalize first letter
-    
-    // Truncate long responses naturally
+      .replace(/^(hi|hello|hey)(!|\s)/i, '')
+      .replace(/^(sure|well|so)(!|\s)/i, '')
+      .replace(/^(of course|absolutely)(!|\s)/i, '')
+      .replace(/(!+|\?+)/g, '$1') // Remove multiple punctuation
+      .replace(/\b(I can|I will|I would|I'd|I'll)\b/gi, 'can')
+      .replace(/\b(let me|allow me)\b/gi, '')
+      .replace(/\b(please|kindly)\b/gi, '')
+      .trim();
+
+    // Ensure natural sentence ending
+    sanitized = sanitized
+      .replace(/[.!?]+$/, '')
+      .replace(/[.!?]\s*$/, '')
+      .trim() + '!';
+
+    // Truncate if still too long
     if (sanitized.length > this.maxResponseLength) {
       sanitized = sanitized
         .substring(0, this.maxResponseLength)
         .replace(/[^.!?]+$/, '')
         .trim();
     }
+
+    // Prevent exact response repetition
+    if (sanitized === this.lastResponse) {
+      sanitized = 'Got it! What else can I help with? 👍';
+    }
+    this.lastResponse = sanitized;
 
     return this.formatResponse(sanitized);
   }
@@ -124,14 +147,19 @@ export class AIService {
     const redFlags = [
       'I apologize',
       'I cannot',
-      'I do not have',
-      'I am an AI',
-      'As an AI',
+      'I do not',
+      'I am',
+      'AI',
       'artificial',
       'assistant',
       'help you with',
+      'my name is',
       'my purpose',
       'designed to',
+      'let me know',
+      'feel free',
+      'as [representative name]',
+      'don\'t hesitate'
     ];
 
     return !redFlags.some(flag => 
@@ -150,16 +178,15 @@ export class AIService {
       responseText = this.sanitizeResponse(responseText);
       
       if (!this.validateResponse(responseText)) {
-        return `Hey! Let me tell you about our awesome stuff at ${this.context.businessName} 😊`;
+        return 'What are you looking for today? 😊';
       }
 
-      // Update analytics
       await this.updateAnalytics(message, responseText);
 
       return responseText;
     } catch (error) {
       console.error('Error in chat:', error);
-      return `Hey! What can I help you find today? 😊`;
+      return 'What can I help you find? 👍';
     }
   }
 
@@ -207,11 +234,11 @@ export class AIService {
   }
 
   getInitialGreeting(): string {
-    return `Hey! I'm ${this.context.representativeName} 👋 What can I help you find today?`;
+    return `Hey! What can I help you find today? 👋`;
   }
 
   static getFormPrompt(): string {
-    return "Want to share your contact info? It'll help me serve you better! 😊";
+    return "Want to share your contact info? 😊";
   }
 
   getVisitorId(): string {
