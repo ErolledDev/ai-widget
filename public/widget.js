@@ -4,6 +4,7 @@ class BusinessChatWidget {
     this.isOpen = false;
     this.hasNewMessage = false;
     this.isLoading = false;
+    this.messages = [];
     this.init();
   }
 
@@ -41,11 +42,11 @@ class BusinessChatWidget {
         @keyframes messageIn {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(10px) scale(0.95);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
         }
 
@@ -385,7 +386,7 @@ class BusinessChatWidget {
         } catch (error) {
           console.error('Failed to send message:', error);
           this.hideTypingIndicator();
-          this.addMessage('assistant', 'Sorry, I encountered an error. Please try again.');
+          this.addMessage('assistant', 'Tell us what you need! 👍');
         } finally {
           this.isLoading = false;
           sendButton.disabled = false;
@@ -402,7 +403,7 @@ class BusinessChatWidget {
       document.body.appendChild(container);
       
       // Add initial message
-      this.addMessage('assistant', `Hi! I'm ${this.settings.representativeName}. How can I help you today?`);
+      this.addMessage('assistant', 'Tell us what you need! 👋');
     } catch (error) {
       console.error('Failed to initialize chat widget:', error);
       throw error;

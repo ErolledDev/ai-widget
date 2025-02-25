@@ -32,8 +32,11 @@ export class AIService {
       history: [
         {
           role: 'user',
-          parts: `Business context: ${this.context.businessInfo}
-
+          parts: `You are a helpful sales representative for ${this.context.businessName}. 
+          Your name is ${this.context.representativeName}.
+          Here is the business information you should use to help customers:
+          ${this.context.businessInfo}
+          
           RULES:
           - Max 40 characters
           - No greetings
@@ -56,7 +59,7 @@ export class AIService {
           - Multiple emojis
           
           EXAMPLES:
-          - Tell me about your products! 👋
+          - Tell us what you need! 👋
           - Need help finding something? 😊
           - Check out our latest deals! 👍
           - Got questions about pricing? 😊`,
@@ -99,6 +102,8 @@ export class AIService {
     // Add emoji at end if found
     if (emoji) {
       formatted = `${formatted} ${emoji[0]}`;
+    } else {
+      formatted = `${formatted} 👍`;
     }
     
     return formatted;
@@ -189,7 +194,7 @@ export class AIService {
       
       if (!this.validateResponse(responseText)) {
         const fallbacks = [
-          'Check our products! 👍',
+          'Tell us what you need! 👍',
           'See whats new! 😊',
           'Find the perfect fit! 👋'
         ];
