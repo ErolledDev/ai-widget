@@ -4,6 +4,7 @@ import { MessageCircle, BarChart3, LogOut, Settings, Users, Bell, BookOpen, Help
 import { useAuth } from '../contexts/AuthContext';
 import WidgetSettings from './WidgetSettings';
 import Analytics from './Analytics';
+import Tutorial from './Tutorial';
 
 export default function Dashboard() {
   const { supabase } = useAuth();
@@ -57,19 +58,25 @@ export default function Dashboard() {
           </NavLink>
 
           <NavLink
-            to="/guide"
-            className="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            to="/dashboard/tutorial"
+            className={({ isActive }) =>
+              `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                isActive 
+                  ? 'bg-indigo-50 text-indigo-600' 
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`
+            }
           >
             <BookOpen className="h-5 w-5 mr-3" />
-            Installation Guide
+            Tutorial
           </NavLink>
 
           <NavLink
-            to="/faq"
+            to="/guide"
             className="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <HelpCircle className="h-5 w-5 mr-3" />
-            FAQ
+            Installation Guide
           </NavLink>
         </nav>
 
@@ -107,6 +114,7 @@ export default function Dashboard() {
           <Routes>
             <Route path="settings" element={<WidgetSettings />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="tutorial" element={<Tutorial />} />
             <Route path="*" element={<Navigate to="settings" replace />} />
           </Routes>
         </main>
