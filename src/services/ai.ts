@@ -26,7 +26,7 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 150; // Increased to allow more natural responses
+  private readonly maxResponseLength = 150;
   private visitorId: string;
   private sessionStartTime: Date;
   private messageCount: number = 0;
@@ -89,11 +89,18 @@ export class AIService {
     try {
       this.messageCount++;
       const sanitizedMessage = this.sanitizeText(message);
+      
+      // Check if it's a contact form submission
+      if (sanitizedMessage.includes('Contact Information:')) {
+        const visitorInfo = this.parseContactInfo(sanitizedMessage);
+        await this.updateAnalyticsWithVisitorInfo(visitorInfo);
+        return "Thank you for providing your contact information! How else can I assist you today?";
+      }
+
       const result = await this.chat.sendMessage(sanitizedMessage);
       const response = await result.response;
       const responseText = response.text();
       
-      // Ensure response isn't too long
       this.lastResponse = responseText.length > this.maxResponseLength 
         ? responseText.substring(0, this.maxResponseLength) + '...'
         : responseText;
@@ -106,6 +113,38 @@ export class AIService {
     } catch (error) {
       console.error('Error in chat:', error);
       return 'I apologize, but I encountered an error. How else can I assist you?';
+    }
+  }
+
+  private parseContactInfo(message: string): { name?: string; email?: string } {
+    const nameMatch = message.match(/Name: (.*?)(?:\n|$)/);
+    const emailMatch = message.match(/Email: (.*?)(?:\n|$)/);
+    
+    return {
+      name: nameMatch?.[1],
+      email: emailMatch?.[1]
+    };
+  }
+
+  private async updateAnalyticsWithVisitorInfo(visitorInfo: { name?: string; email?: string }) {
+    if (!this.context.userId) return;
+
+    try {
+      const { error } = await analyticsClient
+        .from('chat_analytics')
+        .update({
+          visitor_name: visitorInfo.name,
+          visitor_email: visitorInfo.email,
+          updated_at: new Date().toISOString()
+        })
+        .eq('visitor_id', this.visitorId)
+        .eq('user_id', this.context.userId);
+
+      if (error) {
+        console.error('Error updating visitor info:', error);
+      }
+    } catch (error) {
+      console.error('Error in analytics operation:', error);
     }
   }
 

@@ -20,6 +20,8 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
   const [visitorName, setVisitorName] = useState('');
   const [visitorEmail, setVisitorEmail] = useState('');
   const [showContactForm, setShowContactForm] = useState(false);
+  const [showConsent, setShowConsent] = useState(true);
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, startChat, isLoading } = useAIChat(settings);
@@ -54,7 +56,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
     setMessage('');
     await sendMessage(currentMessage);
 
-    // Show contact form after a few messages
+    // Show contact form after 4 messages
     if (messages.length >= 3 && !showContactForm) {
       setShowContactForm(true);
     }
@@ -64,14 +66,31 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
     e.preventDefault();
     if (!visitorName || !visitorEmail) return;
 
-    // Send contact info message
-    await sendMessage(`Name: ${visitorName}\nEmail: ${visitorEmail}`);
-    setShowContactForm(false);
+    try {
+      // Send contact info message
+      await sendMessage(`Contact Information:
+Name: ${visitorName}
+Email: ${visitorEmail}`);
+      
+      setShowContactForm(false);
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+    }
   };
 
   const handleOpen = () => {
+    if (!consentAccepted) {
+      setShowConsent(true);
+    } else {
+      setIsOpen(true);
+      setHasNewMessage(false);
+    }
+  };
+
+  const handleAcceptConsent = () => {
+    setConsentAccepted(true);
+    setShowConsent(false);
     setIsOpen(true);
-    setHasNewMessage(false);
   };
 
   return (
@@ -161,6 +180,9 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                       required
                     />
                   </div>
+                  <p className="text-xs text-gray-500">
+                    By submitting this form, you agree to our privacy policy and terms of service.
+                  </p>
                   <button
                     type="submit"
                     className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
@@ -201,6 +223,31 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                 )}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Consent Modal */}
+      {showConsent && !consentAccepted && !isOpen && (
+        <div className="mb-4 w-[350px] bg-white rounded-lg shadow-lg p-4 animate-slideUp">
+          <h4 className="font-medium text-gray-900 mb-2">Privacy Notice</h4>
+          <p className="text-sm text-gray-600 mb-4">
+            By using this chat service, you agree that your messages and provided information may be stored and processed to improve our service. We respect your privacy and will protect your data according to our privacy policy.
+          </p>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => setShowConsent(false)}
+              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+            >
+              Decline
+            </button>
+            <button
+              onClick={handleAcceptConsent}
+              className="px-3 py-1.5 text-sm text-white rounded"
+              style={{ backgroundColor: settings.color }}
+            >
+              Accept & Continue
+            </button>
           </div>
         </div>
       )}
