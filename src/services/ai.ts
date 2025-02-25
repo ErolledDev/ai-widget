@@ -15,7 +15,7 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 60;
+  private readonly maxResponseLength = 40;
   private visitorId: string;
   private sessionStartTime: Date;
   private messageCount: number = 0;
@@ -32,47 +32,38 @@ export class AIService {
       history: [
         {
           role: 'user',
-          parts: `You are a sales rep at ${this.context.businessName}.
+          parts: `Business context: ${this.context.businessInfo}
 
-          CRITICAL RULES:
-          1. Business Info:
-          ${this.context.businessInfo}
+          RULES:
+          - Max 40 characters
+          - No greetings
+          - No names
+          - No formalities
+          - One emoji at end only
+          - Basic punctuation only
+          - Single short sentence
+          - Focus on products
+          - Stay casual
           
-          2. Response Style:
-             - Keep responses under 60 characters
-             - Be direct and brief
-             - No greetings or closings
-             - No self-references
-             - No names or titles
-             - No formalities
+          NEVER USE:
+          - Special characters
+          - Multiple sentences
+          - Self references
+          - Formal language
+          - Apologies
+          - Names/titles
+          - Quotes/brackets
+          - Multiple emojis
           
-          3. Formatting:
-             - One emoji max per message
-             - Only use: 😊 👋 👍
-             - Basic punctuation only
-             - No special formatting
-          
-          4. Never Use:
-             - Special characters
-             - Multiple sentences
-             - Self-references
-             - Formal language
-             - Apologies
-             - Names
-             - Quotes
-             - Brackets
-          
-          5. Unknown Topics:
-             Direct to products only
-
-          6. Structure:
-             - One short sentence
-             - End with period or exclamation
-             - Optional emoji at end only`,
+          EXAMPLES:
+          - Tell me about your products! 👋
+          - Need help finding something? 😊
+          - Check out our latest deals! 👍
+          - Got questions about pricing? 😊`,
         },
         {
           role: 'model',
-          parts: 'Got it. Short and simple only.',
+          parts: 'Got it. Short and casual only.',
         },
       ],
     });
@@ -89,47 +80,41 @@ export class AIService {
 
   private sanitizeText(text: string): string {
     return text
-      .replace(/[^\w\s.,!?]/g, '')
+      .replace(/[^\w\s]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
   }
 
   private formatResponse(text: string): string {
-    // Remove all special formatting
-    let formatted = text.replace(/[*_~`]/g, '');
-    
-    // Replace line breaks
-    formatted = formatted.replace(/\n/g, ' ');
-    
-    // Keep only one emoji
-    const emojiMatch = formatted.match(new RegExp(this.allowedEmojis.join('|')));
-    formatted = formatted.replace(new RegExp(this.allowedEmojis.join('|'), 'g'), '');
-    
-    // Clean up the text
-    formatted = formatted
-      .replace(/[^\w\s.,!?]/g, '')
+    // Remove all formatting and special characters
+    let formatted = text
+      .replace(/[^a-zA-Z0-9\s.,!?😊👋👍]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
     
-    // Add emoji at the end if one was found
-    if (emojiMatch) {
-      formatted = `${formatted} ${emojiMatch[0]}`;
+    // Extract emoji if present
+    const emoji = formatted.match(new RegExp(this.allowedEmojis.join('|')));
+    formatted = formatted.replace(new RegExp(this.allowedEmojis.join('|'), 'g'), '').trim();
+    
+    // Add emoji at end if found
+    if (emoji) {
+      formatted = `${formatted} ${emoji[0]}`;
     }
     
     return formatted;
   }
 
   private sanitizeResponse(response: string): string {
-    // Remove common patterns
+    // Remove common patterns and formalities
     let sanitized = response
       .replace(/^(hi|hello|hey|sure|well|so)(!|\s)/i, '')
       .replace(/^(of course|absolutely)(!|\s)/i, '')
-      .replace(/\b(I|me|my|mine)\b/gi, '')
-      .replace(/\b(please|kindly)\b/gi, '')
-      .replace(/[^\w\s.,!?😊👋👍]/g, '')
+      .replace(/\b(I|me|my|mine|we|our|us)\b/gi, '')
+      .replace(/\b(please|kindly|would|could|should)\b/gi, '')
+      .replace(/\b(assist|help|support|service)\b/gi, '')
       .trim();
 
-    // Ensure single sentence
+    // Keep first sentence only
     sanitized = sanitized.split(/[.!?]/)[0].trim() + '!';
 
     // Truncate if too long
@@ -139,7 +124,7 @@ export class AIService {
 
     // Prevent repetition
     if (sanitized === this.lastResponse) {
-      sanitized = 'What can help you find? 👍';
+      return 'Looking for something specific? 👍';
     }
     this.lastResponse = sanitized;
 
@@ -147,28 +132,38 @@ export class AIService {
   }
 
   private validateResponse(response: string): boolean {
-    // Check for unwanted patterns
     const redFlags = [
-      'my name',
-      'I am',
-      'I can',
-      'let me',
+      'name',
+      'am',
+      'can',
+      'will',
       'assist',
-      'help you',
+      'help',
       'available',
       'service',
       'support',
       'welcome',
       'contact',
       'reach',
-      'provide'
+      'provide',
+      'about',
+      'interested',
+      'looking',
+      'need',
+      'want',
+      'would',
+      'could',
+      'should',
+      'please',
+      'thank'
     ];
 
+    // Check for unwanted patterns
     if (redFlags.some(flag => response.toLowerCase().includes(flag))) {
       return false;
     }
 
-    // Check for multiple emojis
+    // Check emoji count
     const emojiCount = (response.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
     if (emojiCount > 1) {
       return false;
@@ -193,7 +188,12 @@ export class AIService {
       responseText = this.sanitizeResponse(responseText);
       
       if (!this.validateResponse(responseText)) {
-        return 'Looking for something specific? 😊';
+        const fallbacks = [
+          'Check our products! 👍',
+          'See whats new! 😊',
+          'Find the perfect fit! 👋'
+        ];
+        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
       }
 
       await this.updateAnalytics(message, responseText);
@@ -201,7 +201,7 @@ export class AIService {
       return responseText;
     } catch (error) {
       console.error('Error in chat:', error);
-      return 'How can help today? 👍';
+      return 'Tell us what you need! 👍';
     }
   }
 
@@ -249,11 +249,11 @@ export class AIService {
   }
 
   getInitialGreeting(): string {
-    return `What can help you find today? 👋`;
+    return `Tell us what you need! 👋`;
   }
 
   static getFormPrompt(): string {
-    return "Share your contact info? 😊";
+    return "Share contact info? 😊";
   }
 
   getVisitorId(): string {
