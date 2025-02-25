@@ -31,12 +31,23 @@ export class AIService {
   private sessionStartTime: Date;
   private messageCount: number = 0;
   private lastResponse: string = '';
+  private ipAddress: string | null = null;
 
   constructor(context: ChatContext) {
     this.context = this.sanitizeContext(context);
-    this.visitorId = uuidv4();
+    this.visitorId = localStorage.getItem('chatWidgetVisitorId') || uuidv4();
+    localStorage.setItem('chatWidgetVisitorId', this.visitorId);
     this.sessionStartTime = new Date();
     this.messageCount = 0;
+    
+    // Get IP address
+    fetch('https://api.ipify.org?format=json')
+      .then(response => response.json())
+      .then(data => {
+        this.ipAddress = data.ip;
+        this.updateAnalytics('', ''); // Initial analytics with IP
+      })
+      .catch(err => console.error('Failed to get IP:', err));
     
     this.chat = model.startChat({
       history: [
@@ -171,7 +182,7 @@ export class AIService {
           .from('chat_analytics')
           .update({
             messages_count: this.messageCount,
-            last_message: message,
+            last_message: message || this.lastResponse,
             session_end: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -187,9 +198,10 @@ export class AIService {
           .insert({
             user_id: this.context.userId,
             visitor_id: this.visitorId,
+            ip_address: this.ipAddress,
             session_start: this.sessionStartTime.toISOString(),
             first_message: message,
-            last_message: message,
+            last_message: message || this.lastResponse,
             messages_count: this.messageCount
           });
 
