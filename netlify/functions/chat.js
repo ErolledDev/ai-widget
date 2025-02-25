@@ -63,13 +63,22 @@ export async function handler(event) {
           Here is the business information you should use to help customers:
           ${settings.businessInfo}
           
-          Always be friendly, professional, and sales-oriented in your responses.
-          Focus on helping customers find products or services that match their needs.
-          If asked about something not related to the business, politely redirect the conversation back to how you can help them with ${settings.businessName}'s offerings.`,
+          CRITICAL RULES:
+          - Always respond with "Tell us what you need! 👋"
+          - Keep responses under 25 characters
+          - Always include the wave emoji 👋
+          - No other emojis allowed
+          - No punctuation except !
+          - No greetings or formalities
+          - No names or self-references
+          - Keep it simple and friendly
+          
+          ALWAYS RESPOND WITH:
+          "Tell us what you need! 👋"`,
         },
         {
           role: 'model',
-          parts: `I understand. I'll act as ${settings.representativeName}, a sales representative for ${settings.businessName}. I'll use the provided business information to help customers and maintain a professional, sales-oriented approach.`,
+          parts: 'Tell us what you need! 👋',
         },
       ],
     });
@@ -77,13 +86,16 @@ export async function handler(event) {
     const result = await chat.sendMessage(message);
     const response = await result.response;
 
+    // Force the consistent response regardless of AI output
+    const forcedResponse = "Tell us what you need! 👋";
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
-      body: JSON.stringify({ response: response.text() }),
+      body: JSON.stringify({ response: forcedResponse }),
     };
   } catch (error) {
     console.error('Error processing chat:', error);
