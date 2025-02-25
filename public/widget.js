@@ -374,7 +374,10 @@ class BusinessChatWidget {
             body: JSON.stringify({
               message,
               userId: this.config.uid,
-              settings: this.settings
+              settings: {
+                ...this.settings,
+                userId: this.config.uid // Add userId to settings for analytics
+              }
             })
           });
           
@@ -388,7 +391,7 @@ class BusinessChatWidget {
         } catch (error) {
           console.error('Failed to send message:', error);
           this.hideTypingIndicator();
-          this.addMessage('assistant', 'Tell us what you need! 👋');
+          this.addMessage('assistant', 'I apologize, but I encountered an error. How else can I assist you?');
         } finally {
           this.isLoading = false;
           sendButton.disabled = false;
@@ -405,7 +408,7 @@ class BusinessChatWidget {
       document.body.appendChild(container);
       
       // Add initial message
-      this.addMessage('assistant', 'Tell us what you need! 👋');
+      this.addMessage('assistant', 'Hi! How can I help you today?');
     } catch (error) {
       console.error('Failed to initialize chat widget:', error);
       throw error;
