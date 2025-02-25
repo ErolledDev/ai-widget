@@ -17,6 +17,9 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
   const [message, setMessage] = useState('');
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [visitorName, setVisitorName] = useState('');
+  const [visitorEmail, setVisitorEmail] = useState('');
+  const [showContactForm, setShowContactForm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, startChat, isLoading } = useAIChat(settings);
@@ -50,6 +53,20 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
     const currentMessage = message;
     setMessage('');
     await sendMessage(currentMessage);
+
+    // Show contact form after a few messages
+    if (messages.length >= 3 && !showContactForm) {
+      setShowContactForm(true);
+    }
+  };
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!visitorName || !visitorEmail) return;
+
+    // Send contact info message
+    await sendMessage(`Name: ${visitorName}\nEmail: ${visitorEmail}`);
+    setShowContactForm(false);
   };
 
   const handleOpen = () => {
@@ -76,6 +93,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
             <button
               onClick={() => setIsOpen(false)}
               className="text-white/80 hover:text-white p-1 rounded-full transition-colors"
+              aria-label="Close chat"
             >
               <X className="h-5 w-5" strokeWidth={2.5} />
             </button>
@@ -112,6 +130,47 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
                 </div>
               </div>
             )}
+            {showContactForm && (
+              <div className="bg-gray-50 rounded-lg p-4 animate-messageIn">
+                <form onSubmit={handleContactSubmit} className="space-y-3">
+                  <div>
+                    <label htmlFor="visitorName" className="block text-sm font-medium text-gray-700">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      id="visitorName"
+                      name="visitorName"
+                      value={visitorName}
+                      onChange={(e) => setVisitorName(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[var(--chat-primary-color)] focus:ring focus:ring-[var(--chat-primary-color)] focus:ring-opacity-50"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="visitorEmail" className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="visitorEmail"
+                      name="visitorEmail"
+                      value={visitorEmail}
+                      onChange={(e) => setVisitorEmail(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[var(--chat-primary-color)] focus:ring focus:ring-[var(--chat-primary-color)] focus:ring-opacity-50"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors"
+                    style={{ backgroundColor: settings.color }}
+                  >
+                    Submit
+                  </button>
+                </form>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -120,16 +179,20 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
             <form onSubmit={handleSubmit} className="flex space-x-2">
               <input
                 type="text"
+                id="chatMessage"
+                name="chatMessage"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Type your message..."
                 className="flex-1 rounded-full px-4 py-2 text-sm border border-gray-200 focus:outline-none focus:border-[var(--chat-primary-color)] focus:ring-1 focus:ring-[var(--chat-primary-color)]"
+                aria-label="Chat message"
               />
               <button
                 type="submit"
                 disabled={isLoading}
                 className="w-10 h-10 rounded-full text-white flex items-center justify-center transition-all transform hover:scale-105 disabled:opacity-75 disabled:scale-100 disabled:cursor-not-allowed"
                 style={{ backgroundColor: settings.color }}
+                aria-label="Send message"
               >
                 {isLoading ? (
                   <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2.5} />
@@ -148,6 +211,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
           onClick={handleOpen}
           className="relative w-14 h-14 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 rounded-full flex items-center justify-center"
           style={{ backgroundColor: settings.color }}
+          aria-label="Open chat"
         >
           <MessageCircle className="h-6 w-6" strokeWidth={2.5} />
           {hasNewMessage && (
