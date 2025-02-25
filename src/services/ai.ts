@@ -5,6 +5,12 @@ import { createClient } from '@supabase/supabase-js';
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
+// Create a Supabase client with service role key for analytics
+const analyticsClient = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_API_KEY
+);
+
 interface ChatContext {
   businessName: string;
   representativeName: string;
@@ -94,20 +100,22 @@ export class AIService {
     if (!this.context.userId) return;
 
     try {
-      const supabase = createClient(
-        import.meta.env.VITE_SUPABASE_URL,
-        import.meta.env.VITE_SUPABASE_ANON_KEY
-      );
-
-      const { data: existingSession } = await supabase
+      // Check for existing session
+      const { data: existingSession, error: fetchError } = await analyticsClient
         .from('chat_analytics')
         .select('id')
         .eq('visitor_id', this.visitorId)
         .eq('user_id', this.context.userId)
         .single();
 
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching session:', fetchError);
+        return;
+      }
+
       if (existingSession) {
-        await supabase
+        // Update existing session
+        const { error: updateError } = await analyticsClient
           .from('chat_analytics')
           .update({
             messages_count: this.messageCount,
@@ -116,8 +124,13 @@ export class AIService {
             updated_at: new Date().toISOString()
           })
           .eq('id', existingSession.id);
+
+        if (updateError) {
+          console.error('Error updating analytics:', updateError);
+        }
       } else {
-        await supabase
+        // Create new session
+        const { error: insertError } = await analyticsClient
           .from('chat_analytics')
           .insert({
             user_id: this.context.userId,
@@ -127,9 +140,13 @@ export class AIService {
             last_message: message,
             messages_count: this.messageCount
           });
+
+        if (insertError) {
+          console.error('Error inserting analytics:', insertError);
+        }
       }
     } catch (error) {
-      console.error('Error updating analytics:', error);
+      console.error('Error in analytics operation:', error);
     }
   }
 
