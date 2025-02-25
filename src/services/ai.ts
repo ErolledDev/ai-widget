@@ -26,7 +26,7 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 25;
+  private readonly maxResponseLength = 150; // Increased to allow more natural responses
   private visitorId: string;
   private sessionStartTime: Date;
   private messageCount: number = 0;
@@ -48,21 +48,21 @@ export class AIService {
           ${this.context.businessInfo}
           
           CRITICAL RULES:
-          - Always respond with "Tell us what you need! 👋"
-          - Keep responses under 25 characters
-          - Always include the wave emoji 👋
-          - No other emojis allowed
-          - No punctuation except !
-          - No greetings or formalities
-          - No names or self-references
-          - Keep it simple and friendly
+          - Keep responses under 150 characters
+          - Be helpful and friendly
+          - Use natural, conversational language
+          - Provide relevant information from the business info
+          - Stay professional and on-topic
+          - Avoid excessive emojis or informal language
           
-          ALWAYS RESPOND WITH:
-          "Tell us what you need! 👋"`,
+          Example responses:
+          - "Hi! I can help you learn more about our products and services. What are you looking for?"
+          - "We offer [specific product/service]. Would you like more details?"
+          - "I'd be happy to explain our [feature/service]. What would you like to know?"`,
         },
         {
           role: 'model',
-          parts: 'Tell us what you need! 👋',
+          parts: 'Hi! How can I help you today?',
         },
       ],
     });
@@ -78,8 +78,9 @@ export class AIService {
   }
 
   private sanitizeText(text: string): string {
+    if (!text) return '';
     return text
-      .replace(/[^\w\s]/g, '')
+      .replace(/[^\w\s.,!?-]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -88,30 +89,30 @@ export class AIService {
     try {
       this.messageCount++;
       const sanitizedMessage = this.sanitizeText(message);
-      await this.chat.sendMessage(sanitizedMessage);
+      const result = await this.chat.sendMessage(sanitizedMessage);
+      const response = await result.response;
+      const responseText = response.text();
       
-      // Always return the same response
-      const response = 'Tell us what you need! 👋';
+      // Ensure response isn't too long
+      this.lastResponse = responseText.length > this.maxResponseLength 
+        ? responseText.substring(0, this.maxResponseLength) + '...'
+        : responseText;
       
-      await this.updateAnalytics(message, response);
-      return response;
+      if (this.context.userId) {
+        await this.updateAnalytics(message, this.lastResponse);
+      }
+      
+      return this.lastResponse;
     } catch (error) {
       console.error('Error in chat:', error);
-      return 'Tell us what you need! 👋';
+      return 'I apologize, but I encountered an error. How else can I assist you?';
     }
   }
 
   private async updateAnalytics(message: string, response: string) {
-    if (!this.context.userId) {
-      console.log('No userId provided for analytics');
-      return;
-    }
+    if (!this.context.userId) return;
 
     try {
-      console.log('Updating analytics for user:', this.context.userId);
-      console.log('Visitor ID:', this.visitorId);
-      console.log('Message count:', this.messageCount);
-
       // Check for existing session
       const { data: existingSession, error: fetchError } = await analyticsClient
         .from('chat_analytics')
@@ -126,7 +127,6 @@ export class AIService {
       }
 
       if (existingSession) {
-        console.log('Updating existing session:', existingSession.id);
         // Update existing session
         const { error: updateError } = await analyticsClient
           .from('chat_analytics')
@@ -140,13 +140,10 @@ export class AIService {
 
         if (updateError) {
           console.error('Error updating analytics:', updateError);
-        } else {
-          console.log('Successfully updated analytics');
         }
       } else {
-        console.log('Creating new analytics session');
         // Create new session
-        const { data: newSession, error: insertError } = await analyticsClient
+        const { error: insertError } = await analyticsClient
           .from('chat_analytics')
           .insert({
             user_id: this.context.userId,
@@ -155,14 +152,10 @@ export class AIService {
             first_message: message,
             last_message: message,
             messages_count: this.messageCount
-          })
-          .select()
-          .single();
+          });
 
         if (insertError) {
           console.error('Error inserting analytics:', insertError);
-        } else {
-          console.log('Successfully created new analytics session:', newSession?.id);
         }
       }
     } catch (error) {
@@ -171,11 +164,11 @@ export class AIService {
   }
 
   getInitialGreeting(): string {
-    return 'Tell us what you need! 👋';
+    return 'Hi! How can I help you today?';
   }
 
   static getFormPrompt(): string {
-    return "Share contact info?";
+    return "Would you like to share your contact information?";
   }
 
   getVisitorId(): string {

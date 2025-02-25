@@ -16,7 +16,10 @@ export default function Widget() {
 
   useEffect(() => {
     async function fetchSettings() {
-      if (!userId) return;
+      if (!userId) {
+        setError('User ID is required');
+        return;
+      }
       
       try {
         const { data, error } = await supabase
@@ -26,7 +29,12 @@ export default function Widget() {
           .single();
 
         if (error) throw error;
-        if (data) setSettings(data.settings);
+        if (data) {
+          setSettings({
+            ...data.settings,
+            userId // Add userId to settings for analytics
+          });
+        }
       } catch (err) {
         console.error('Error fetching settings:', err);
         setError('Failed to load chat widget');
