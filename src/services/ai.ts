@@ -8,7 +8,12 @@ const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 // Create a Supabase client with service role key for analytics
 const analyticsClient = createClient(
   import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_API_KEY
+  import.meta.env.VITE_API_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 interface ChatContext {
@@ -97,9 +102,16 @@ export class AIService {
   }
 
   private async updateAnalytics(message: string, response: string) {
-    if (!this.context.userId) return;
+    if (!this.context.userId) {
+      console.log('No userId provided for analytics');
+      return;
+    }
 
     try {
+      console.log('Updating analytics for user:', this.context.userId);
+      console.log('Visitor ID:', this.visitorId);
+      console.log('Message count:', this.messageCount);
+
       // Check for existing session
       const { data: existingSession, error: fetchError } = await analyticsClient
         .from('chat_analytics')
@@ -114,6 +126,7 @@ export class AIService {
       }
 
       if (existingSession) {
+        console.log('Updating existing session:', existingSession.id);
         // Update existing session
         const { error: updateError } = await analyticsClient
           .from('chat_analytics')
@@ -127,10 +140,13 @@ export class AIService {
 
         if (updateError) {
           console.error('Error updating analytics:', updateError);
+        } else {
+          console.log('Successfully updated analytics');
         }
       } else {
+        console.log('Creating new analytics session');
         // Create new session
-        const { error: insertError } = await analyticsClient
+        const { data: newSession, error: insertError } = await analyticsClient
           .from('chat_analytics')
           .insert({
             user_id: this.context.userId,
@@ -139,10 +155,14 @@ export class AIService {
             first_message: message,
             last_message: message,
             messages_count: this.messageCount
-          });
+          })
+          .select()
+          .single();
 
         if (insertError) {
           console.error('Error inserting analytics:', insertError);
+        } else {
+          console.log('Successfully created new analytics session:', newSession?.id);
         }
       }
     } catch (error) {
