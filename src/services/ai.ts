@@ -20,7 +20,6 @@ export class AIService {
   private sessionStartTime: Date;
   private messageCount: number = 0;
   private lastResponse: string = '';
-  private readonly allowedEmojis = ['😊', '👋', '👍'];
 
   constructor(context: ChatContext) {
     this.context = this.sanitizeContext(context);
@@ -42,7 +41,7 @@ export class AIService {
           - No greetings
           - No names
           - No formalities
-          - One emoji at end only
+          - No emojis
           - Basic punctuation only
           - Single short sentence
           - Focus on products
@@ -56,13 +55,13 @@ export class AIService {
           - Apologies
           - Names/titles
           - Quotes/brackets
-          - Multiple emojis
+          - Emojis
           
           EXAMPLES:
-          - Tell us what you need! 👋
-          - Need help finding something? 😊
-          - Check out our latest deals! 👍
-          - Got questions about pricing? 😊`,
+          - Tell us what you need!
+          - Need help finding something?
+          - Check out our latest deals!
+          - Got questions about pricing?`,
         },
         {
           role: 'model',
@@ -91,19 +90,13 @@ export class AIService {
   private formatResponse(text: string): string {
     // Remove all formatting and special characters
     let formatted = text
-      .replace(/[^a-zA-Z0-9\s.,!?😊👋👍]/g, '')
+      .replace(/[^a-zA-Z0-9\s.,!?]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
     
-    // Extract emoji if present
-    const emoji = formatted.match(new RegExp(this.allowedEmojis.join('|')));
-    formatted = formatted.replace(new RegExp(this.allowedEmojis.join('|'), 'g'), '').trim();
-    
-    // Add emoji at end if found
-    if (emoji) {
-      formatted = `${formatted} ${emoji[0]}`;
-    } else {
-      formatted = `${formatted} 👍`;
+    // Add exclamation mark if missing
+    if (!formatted.endsWith('!')) {
+      formatted = formatted + '!';
     }
     
     return formatted;
@@ -129,7 +122,7 @@ export class AIService {
 
     // Prevent repetition
     if (sanitized === this.lastResponse) {
-      return 'Looking for something specific? 👍';
+      return 'Looking for something specific!';
     }
     this.lastResponse = sanitized;
 
@@ -168,14 +161,8 @@ export class AIService {
       return false;
     }
 
-    // Check emoji count
-    const emojiCount = (response.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
-    if (emojiCount > 1) {
-      return false;
-    }
-
     // Check for special characters
-    if (/[^a-zA-Z0-9\s.,!?😊👋👍]/.test(response)) {
+    if (/[^a-zA-Z0-9\s.,!?]/.test(response)) {
       return false;
     }
 
@@ -194,9 +181,9 @@ export class AIService {
       
       if (!this.validateResponse(responseText)) {
         const fallbacks = [
-          'Tell us what you need! 👍',
-          'See whats new! 😊',
-          'Find the perfect fit! 👋'
+          'Tell us what you need!',
+          'See whats new!',
+          'Find the perfect fit!'
         ];
         return fallbacks[Math.floor(Math.random() * fallbacks.length)];
       }
@@ -206,7 +193,7 @@ export class AIService {
       return responseText;
     } catch (error) {
       console.error('Error in chat:', error);
-      return 'Tell us what you need! 👍';
+      return 'Tell us what you need!';
     }
   }
 
@@ -254,11 +241,11 @@ export class AIService {
   }
 
   getInitialGreeting(): string {
-    return 'Tell us what you need! 👋';
+    return 'Tell us what you need!';
   }
 
   static getFormPrompt(): string {
-    return "Share contact info? 😊";
+    return "Share contact info?";
   }
 
   getVisitorId(): string {
