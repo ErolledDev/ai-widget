@@ -6,6 +6,8 @@ class BusinessChatWidget {
     this.isLoading = false;
     this.messages = [];
     this.showContactForm = false;
+    this.showConsent = true;
+    this.consentAccepted = false;
     this.init();
   }
 
@@ -347,8 +349,67 @@ class BusinessChatWidget {
           animation-delay: 0.4s !important;
         }
 
+        .consent-modal {
+          position: fixed !important;
+          bottom: 90px !important;
+          right: 24px !important;
+          width: 350px !important;
+          background: white !important;
+          border-radius: 12px !important;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+          padding: 16px !important;
+          animation: slideUp 0.3s ease-out !important;
+          z-index: 999999 !important;
+        }
+
+        .consent-modal h4 {
+          font-size: 16px !important;
+          font-weight: 500 !important;
+          color: #111827 !important;
+          margin: 0 0 8px 0 !important;
+        }
+
+        .consent-modal p {
+          font-size: 14px !important;
+          color: #4B5563 !important;
+          margin: 0 0 16px 0 !important;
+          line-height: 1.5 !important;
+        }
+
+        .consent-modal .buttons {
+          display: flex !important;
+          justify-content: flex-end !important;
+          gap: 8px !important;
+        }
+
+        .consent-modal button {
+          padding: 6px 12px !important;
+          font-size: 14px !important;
+          border-radius: 6px !important;
+          cursor: pointer !important;
+          transition: all 0.2s !important;
+        }
+
+        .consent-modal .decline {
+          background: none !important;
+          border: none !important;
+          color: #4B5563 !important;
+        }
+
+        .consent-modal .accept {
+          background-color: ${this.settings.color || '#4F46E5'} !important;
+          color: white !important;
+          border: none !important;
+        }
+
         .hidden {
           display: none !important;
+        }
+
+        .privacy-link {
+          color: ${this.settings.color || '#4F46E5'} !important;
+          text-decoration: underline !important;
+          cursor: pointer !important;
         }
       `;
       document.head.appendChild(styles);
@@ -382,6 +443,22 @@ class BusinessChatWidget {
         </div>
       `;
 
+      // Create consent modal
+      const consentModal = document.createElement('div');
+      consentModal.className = 'consent-modal hidden';
+      consentModal.innerHTML = `
+        <h4>Privacy Notice</h4>
+        <p>
+          By using this chat service, you agree that your messages and provided information may be stored and processed to improve our service. 
+          We respect your privacy and will protect your data according to our 
+          <a href="https://chatwidgetai.netlify.app/privacy" target="_blank" class="privacy-link">privacy policy</a>.
+        </p>
+        <div class="buttons">
+          <button class="decline">Decline</button>
+          <button class="accept">Accept & Continue</button>
+        </div>
+      `;
+
       // Create toggle button
       const button = document.createElement('button');
       button.className = 'chat-toggle-button';
@@ -392,8 +469,23 @@ class BusinessChatWidget {
       
       // Add event listeners
       button.onclick = () => {
+        if (!this.consentAccepted) {
+          consentModal.classList.remove('hidden');
+        } else {
+          this.toggleChat();
+          button.classList.add('hidden');
+        }
+      };
+
+      consentModal.querySelector('.accept').onclick = () => {
+        this.consentAccepted = true;
+        consentModal.classList.add('hidden');
         this.toggleChat();
         button.classList.add('hidden');
+      };
+
+      consentModal.querySelector('.decline').onclick = () => {
+        consentModal.classList.add('hidden');
       };
       
       chatWindow.querySelector('.chat-close').onclick = () => {
@@ -439,8 +531,8 @@ class BusinessChatWidget {
           this.hideTypingIndicator();
           this.addMessage('assistant', data.response);
 
-          // Show contact form after a few messages
-          if (this.messages.length >= 3 && !this.showContactForm) {
+          // Show contact form after 4 messages
+          if (this.messages.length >= 4 && !this.showContactForm) {
             this.showContactForm = true;
             this.displayContactForm();
           }
@@ -460,6 +552,7 @@ class BusinessChatWidget {
       };
       
       container.appendChild(chatWindow);
+      container.appendChild(consentModal);
       container.appendChild(button);
       document.body.appendChild(container);
       
@@ -483,6 +576,11 @@ class BusinessChatWidget {
         <label for="visitorEmail">Email</label>
         <input type="email" id="visitorEmail" name="visitorEmail" required>
         
+        <p class="text-xs text-gray-500 mb-4">
+          By submitting this form, you agree to our 
+          <a href="https://chatwidgetai.netlify.app/privacy" target="_blank" class="privacy-link">privacy policy</a>.
+        </p>
+        
         <button type="submit">Submit</button>
       </form>
     `;
@@ -493,7 +591,7 @@ class BusinessChatWidget {
       const email = formDiv.querySelector('#visitorEmail').value;
       
       if (name && email) {
-        await this.sendMessage(`Name: ${name}\nEmail: ${email}`);
+        await this.sendMessage(`Contact Information:\nName: ${name}\nEmail: ${email}`);
         formDiv.remove();
         this.showContactForm = false;
       }
@@ -565,6 +663,35 @@ class BusinessChatWidget {
     if (role === 'assistant' && !this.isOpen) {
       this.hasNewMessage = true;
       this.updateNotificationDot();
+    }
+  }
+
+  async sendMessage(message) {
+    try {
+      const response = await fetch('https://chatwidgetai.netlify.app/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message,
+          userId: this.config.uid,
+          settings: {
+            ...this.settings,
+            userId: this.config.uid
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.response;
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      throw error;
     }
   }
 }
