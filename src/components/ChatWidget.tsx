@@ -61,14 +61,10 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const widgetStyles = {
-    '--chat-primary-color': settings.color,
-  } as React.CSSProperties;
-
   return (
     <div 
       className={`fixed bottom-4 sm:bottom-6 ${isTest ? 'right-[320px]' : 'right-4 sm:right-6'} z-[999999] flex flex-col items-end font-sans`}
-      style={widgetStyles}
+      style={{ '--chat-primary-color': settings.color } as React.CSSProperties}
     >
       {isOpen && (
         <div className="mb-4 w-[calc(100vw-2rem)] sm:w-[350px] max-w-[350px] bg-white rounded-2xl shadow-2xl flex flex-col border border-gray-100 animate-slideUp overflow-hidden">

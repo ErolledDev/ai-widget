@@ -95,7 +95,6 @@ class BusinessChatWidget {
 
         .chat-toggle-button:hover {
           transform: scale(1.05) !important;
-          opacity: 0.9 !important;
         }
 
         .chat-toggle-button:active {
