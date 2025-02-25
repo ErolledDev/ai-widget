@@ -47,7 +47,7 @@ export default function Auth() {
         <div className="w-full md:w-1/2 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 p-8 md:p-12 flex flex-col justify-center">
           <div className="max-w-xl mx-auto text-white">
             <div className="flex items-center space-x-3 mb-8">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-10 w-10"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
               <h1 className="text-3xl font-bold">ChatWidget AI</h1>
             </div>
             

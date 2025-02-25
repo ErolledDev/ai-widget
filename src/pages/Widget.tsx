@@ -16,6 +16,8 @@ export default function Widget() {
 
   useEffect(() => {
     async function fetchSettings() {
+      if (!userId) return;
+      
       try {
         const { data, error } = await supabase
           .from('widget_settings')
@@ -31,9 +33,7 @@ export default function Widget() {
       }
     }
 
-    if (userId) {
-      fetchSettings();
-    }
+    fetchSettings();
   }, [userId]);
 
   if (error) {
@@ -47,7 +47,7 @@ export default function Widget() {
   if (!settings) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        Loading...
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
   }

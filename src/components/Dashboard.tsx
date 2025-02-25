@@ -26,7 +26,20 @@ export default function Dashboard() {
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-message-circle h-8 w-8 text-indigo-600"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            className="h-8 w-8 text-indigo-600"
+          >
+            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path>
+          </svg>
           <span className="ml-3 text-lg font-semibold text-gray-900">ChatWidget AI</span>
         </div>
         
