@@ -198,6 +198,8 @@ export default function Auth() {
                 </button>
 
                 <div className="flex justify-center space-x-4 text-sm text-gray-500">
+                  <Link to="/guide" className="hover:text-indigo-600">Guide</Link>
+                  <Link to="/faq" className="hover:text-indigo-600">FAQ</Link>
                   <Link to="/terms" className="hover:text-indigo-600">Terms</Link>
                   <Link to="/privacy" className="hover:text-indigo-600">Privacy</Link>
                   <Link to="/contact" className="hover:text-indigo-600">Contact</Link>

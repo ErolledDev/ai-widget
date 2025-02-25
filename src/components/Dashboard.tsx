@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
-import { MessageCircle, BarChart3, LogOut, Settings, Users, Bell } from 'lucide-react';
+import { MessageCircle, BarChart3, LogOut, Settings, Users, Bell, BookOpen, HelpCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import WidgetSettings from './WidgetSettings';
 import Analytics from './Analytics';
@@ -54,6 +54,22 @@ export default function Dashboard() {
           >
             <BarChart3 className="h-5 w-5 mr-3" />
             Analytics
+          </NavLink>
+
+          <NavLink
+            to="/guide"
+            className="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <BookOpen className="h-5 w-5 mr-3" />
+            Installation Guide
+          </NavLink>
+
+          <NavLink
+            to="/faq"
+            className="flex items-center px-4 py-3 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <HelpCircle className="h-5 w-5 mr-3" />
+            FAQ
           </NavLink>
         </nav>
 

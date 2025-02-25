@@ -8,6 +8,8 @@ import Widget from './pages/Widget';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Contact from './pages/Contact';
+import FAQ from './pages/FAQ';
+import Guide from './pages/Guide';
 import NotFound from './pages/NotFound';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -47,6 +49,25 @@ function App() {
           <meta name="robots" content="index, follow" />
           <meta name="author" content="ChatWidget AI" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          
+          {/* Structured Data */}
+          <script type="application/ld+json">
+            {`
+              {
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                "name": "ChatWidget AI",
+                "applicationCategory": "BusinessApplication",
+                "description": "AI-powered chat widget for customer service automation",
+                "operatingSystem": "Web",
+                "offers": {
+                  "@type": "Offer",
+                  "price": "0",
+                  "priceCurrency": "USD"
+                }
+              }
+            `}
+          </script>
         </Helmet>
 
         <div className="min-h-screen bg-gray-50">
@@ -55,6 +76,8 @@ function App() {
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/guide" element={<Guide />} />
             <Route
               path="/dashboard/*"
               element={
