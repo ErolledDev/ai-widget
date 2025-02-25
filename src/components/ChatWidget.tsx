@@ -8,6 +8,7 @@ interface ChatWidgetProps {
     businessName: string;
     representativeName: string;
     businessInfo: string;
+    userId?: string;
   };
   isTest?: boolean;
 }
@@ -25,7 +26,10 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
   const [hasSubmittedForm, setHasSubmittedForm] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const { messages, sendMessage, startChat, isLoading } = useAIChat(settings);
+  const { messages, sendMessage, startChat, isLoading } = useAIChat({
+    ...settings,
+    userId: settings.userId // Ensure userId is passed for both test and production
+  });
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {

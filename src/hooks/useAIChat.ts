@@ -7,11 +7,14 @@ interface Message {
   timestamp: string;
 }
 
-export function useAIChat(context: {
+interface ChatContext {
   businessName: string;
   representativeName: string;
   businessInfo: string;
-}) {
+  userId?: string;
+}
+
+export function useAIChat(context: ChatContext) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiService] = useState(() => new AIService(context));
   const [isLoading, setIsLoading] = useState(false);
