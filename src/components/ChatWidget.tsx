@@ -28,7 +28,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, startChat, isLoading } = useAIChat({
     ...settings,
-    userId: settings.userId // Ensure userId is passed for both test and production
+    userId: settings.userId
   });
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
     await sendMessage(currentMessage);
 
     // Show contact form after 4 messages if not submitted yet
-    if (messages.length >= 3 && !showContactForm && !hasSubmittedForm) {
+    if (messages.length >= 4 && !showContactForm && !hasSubmittedForm) {
       setShowContactForm(true);
     }
   };
