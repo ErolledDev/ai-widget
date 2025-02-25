@@ -8,6 +8,7 @@ class BusinessChatWidget {
     this.showContactForm = false;
     this.showConsent = true;
     this.consentAccepted = false;
+    this.hasSubmittedForm = false;
     this.init();
   }
 
@@ -69,6 +70,15 @@ class BusinessChatWidget {
           }
         }
 
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
         .business-chat-widget {
           position: fixed !important;
           bottom: 24px !important;
@@ -97,12 +107,12 @@ class BusinessChatWidget {
         }
 
         .chat-toggle-button {
+          width: 56px !important;
+          height: 56px !important;
           background-color: ${this.settings.color || '#4F46E5'} !important;
           color: white !important;
           border: none !important;
           border-radius: 50% !important;
-          width: 56px !important;
-          height: 56px !important;
           cursor: pointer !important;
           box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
           display: flex !important;
@@ -110,27 +120,17 @@ class BusinessChatWidget {
           justify-content: center !important;
           transition: all 0.2s !important;
           position: relative !important;
+          transform-origin: center !important;
+        }
+
+        .chat-toggle-button:hover {
+          transform: scale(1.05) !important;
+          box-shadow: 0 6px 16px rgba(0,0,0,0.2) !important;
         }
 
         .chat-toggle-button svg {
           width: 24px !important;
           height: 24px !important;
-          stroke-width: 2.5 !important;
-        }
-
-        .chat-send {
-          width: 40px !important;
-          height: 40px !important;
-          border-radius: 50% !important;
-          padding: 0 !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-        }
-
-        .chat-send svg {
-          width: 20px !important;
-          height: 20px !important;
           stroke-width: 2.5 !important;
         }
 
@@ -141,7 +141,7 @@ class BusinessChatWidget {
         .chat-header {
           background: ${this.settings.color || '#4F46E5'} !important;
           color: white !important;
-          padding: 16px !important;
+          padding: 12px 16px !important;
           display: flex !important;
           align-items: center !important;
           justify-content: space-between !important;
@@ -180,12 +180,6 @@ class BusinessChatWidget {
           opacity: 1 !important;
         }
 
-        .chat-close svg {
-          width: 20px !important;
-          height: 20px !important;
-          stroke-width: 2.5 !important;
-        }
-
         .chat-messages {
           flex: 1 !important;
           overflow-y: auto !important;
@@ -193,6 +187,20 @@ class BusinessChatWidget {
           display: flex !important;
           flex-direction: column !important;
           gap: 12px !important;
+          scroll-behavior: smooth !important;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+          width: 6px !important;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+          background: transparent !important;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+          background-color: rgba(0, 0, 0, 0.1) !important;
+          border-radius: 3px !important;
         }
 
         .chat-input-container {
@@ -210,27 +218,27 @@ class BusinessChatWidget {
           border-radius: 9999px !important;
           font-size: 14px !important;
           transition: all 0.2s !important;
+          outline: none !important;
         }
 
         .chat-input:focus {
-          outline: none !important;
           border-color: ${this.settings.color || '#4F46E5'} !important;
           box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
         }
 
         .chat-send {
+          width: 40px !important;
+          height: 40px !important;
           background-color: ${this.settings.color || '#4F46E5'} !important;
           color: white !important;
           border: none !important;
-          border-radius: 9999px !important;
-          width: 40px !important;
-          height: 40px !important;
-          padding: 8px !important;
+          border-radius: 50% !important;
           cursor: pointer !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
           transition: all 0.2s !important;
+          padding: 0 !important;
         }
 
         .chat-send:hover {
@@ -255,8 +263,8 @@ class BusinessChatWidget {
           padding: 10px 16px !important;
           border-radius: 16px !important;
           animation: messageIn 0.3s ease-out !important;
-          line-height: 1.4 !important;
           font-size: 14px !important;
+          line-height: 1.4 !important;
         }
 
         .message.user {
@@ -296,10 +304,10 @@ class BusinessChatWidget {
           border-radius: 6px !important;
           margin-bottom: 12px !important;
           font-size: 14px !important;
+          outline: none !important;
         }
 
         .contact-form input:focus {
-          outline: none !important;
           border-color: ${this.settings.color || '#4F46E5'} !important;
           box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1) !important;
         }
@@ -402,6 +410,27 @@ class BusinessChatWidget {
           border: none !important;
         }
 
+        .notification-dot {
+          position: absolute !important;
+          top: -1px !important;
+          right: -1px !important;
+          width: 12px !important;
+          height: 12px !important;
+          background-color: #EF4444 !important;
+          border-radius: 50% !important;
+        }
+
+        .notification-dot-ping {
+          position: absolute !important;
+          top: -1px !important;
+          right: -1px !important;
+          width: 12px !important;
+          height: 12px !important;
+          background-color: #EF4444 !important;
+          border-radius: 50% !important;
+          animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite !important;
+        }
+
         .hidden {
           display: none !important;
         }
@@ -410,6 +439,10 @@ class BusinessChatWidget {
           color: ${this.settings.color || '#4F46E5'} !important;
           text-decoration: underline !important;
           cursor: pointer !important;
+        }
+
+        .loading-spinner {
+          animation: spin 1s linear infinite !important;
         }
       `;
       document.head.appendChild(styles);
@@ -531,8 +564,8 @@ class BusinessChatWidget {
           this.hideTypingIndicator();
           this.addMessage('assistant', data.response);
 
-          // Show contact form after 4 messages
-          if (this.messages.length >= 4 && !this.showContactForm) {
+          // Show contact form after 4 messages if not submitted
+          if (this.messages.length >= 4 && !this.showContactForm && !this.hasSubmittedForm) {
             this.showContactForm = true;
             this.displayContactForm();
           }
@@ -543,6 +576,14 @@ class BusinessChatWidget {
         } finally {
           this.isLoading = false;
           sendButton.disabled = false;
+          
+          // Update send button icon
+          sendButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          `;
         }
       };
       
@@ -594,6 +635,10 @@ class BusinessChatWidget {
         await this.sendMessage(`Contact Information:\nName: ${name}\nEmail: ${email}`);
         formDiv.remove();
         this.showContactForm = false;
+        this.hasSubmittedForm = true;
+        
+        // Send thank you message
+        await this.sendMessage("Thank you for providing your contact information! We'll be in touch soon. How else can I assist you today?");
       }
     };
 
