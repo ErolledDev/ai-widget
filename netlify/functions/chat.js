@@ -1,10 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Supabase client with direct environment variables
+// Validate environment variables early
+const requiredEnvVars = {
+  VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL,
+  VITE_API_KEY: process.env.VITE_API_KEY,
+  VITE_GEMINI_API_KEY: process.env.VITE_GEMINI_API_KEY
+};
+
+// Check for missing environment variables
+const missingEnvVars = Object.entries(requiredEnvVars)
+  .filter(([_, value]) => !value)
+  .map(([key]) => key);
+
+if (missingEnvVars.length > 0) {
+  console.error('Missing required environment variables:', missingEnvVars);
+}
+
+// Initialize Supabase client with environment variables
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || '',
-  process.env.VITE_API_KEY || '', // Use service role key for admin access
+  process.env.VITE_SUPABASE_URL,
+  process.env.VITE_API_KEY,
   {
     auth: {
       autoRefreshToken: false,
@@ -13,8 +29,8 @@ const supabase = createClient(
   }
 );
 
-// Initialize Google AI with direct environment variable
-const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || '');
+// Initialize Google AI
+const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
 
 export async function handler(event) {
   // Handle CORS preflight requests
@@ -42,16 +58,18 @@ export async function handler(event) {
   }
 
   try {
-    // Validate environment variables
-    if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_API_KEY || !process.env.VITE_GEMINI_API_KEY) {
-      console.error('Missing required environment variables');
+    // Check for missing environment variables
+    if (missingEnvVars.length > 0) {
       return {
         statusCode: 500,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({ error: 'Server configuration error' }),
+        body: JSON.stringify({ 
+          error: 'Server configuration error',
+          details: process.env.NODE_ENV === 'development' ? `Missing environment variables: ${missingEnvVars.join(', ')}` : undefined
+        }),
       };
     }
 
@@ -72,29 +90,26 @@ export async function handler(event) {
 
     const { message, userId, settings } = parsedBody;
 
-    // Validate required fields
-    if (!message || !userId || !settings) {
-      console.error('Missing required fields:', { message: !!message, userId: !!userId, settings: !!settings });
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Missing required fields' }),
-      };
+    // Enhanced request validation
+    const validationErrors = [];
+    if (!message) validationErrors.push('message is required');
+    if (!userId) validationErrors.push('userId is required');
+    if (!settings) validationErrors.push('settings is required');
+    if (settings && (!settings.businessName || !settings.representativeName)) {
+      validationErrors.push('settings must include businessName and representativeName');
     }
 
-    // Validate settings object
-    if (!settings.businessName || !settings.representativeName) {
-      console.error('Invalid settings object:', settings);
+    if (validationErrors.length > 0) {
       return {
         statusCode: 400,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
         },
-        body: JSON.stringify({ error: 'Invalid settings configuration' }),
+        body: JSON.stringify({ 
+          error: 'Validation failed',
+          details: validationErrors 
+        }),
       };
     }
 
@@ -154,6 +169,9 @@ export async function handler(event) {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'no-cache',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
         },
         body: JSON.stringify({ response: finalResponse }),
       };
