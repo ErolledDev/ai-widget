@@ -254,7 +254,7 @@ export class AIService {
   }
 
   getInitialGreeting(): string {
-    return `Tell us what you need! 👋`;
+    return 'Tell us what you need! 👋';
   }
 
   static getFormPrompt(): string {

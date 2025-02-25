@@ -79,7 +79,9 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
           >
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
               <div className="bg-white/10 p-1.5 sm:p-2 rounded-lg flex-shrink-0">
-                <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
               </div>
               <div className="min-w-0">
                 <span className="font-medium text-white block text-[13px] sm:text-[15px] truncate">
@@ -187,7 +189,9 @@ export default function ChatWidget({ settings, isTest = false }: ChatWidgetProps
           className="relative rounded-2xl p-3 sm:p-4 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95 group"
           style={{ backgroundColor: settings.color }}
         >
-          <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-hover:rotate-12" />
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
           {hasNewMessage && (
             <>
               <span className="absolute -top-1 -right-1 h-3 w-3 sm:h-4 sm:w-4 bg-red-500 rounded-full animate-ping" />
