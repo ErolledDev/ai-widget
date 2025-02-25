@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { useAuth } from '../contexts/AuthContext';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Download, Upload } from 'lucide-react';
 import ChatWidget from './ChatWidget';
 
 interface WidgetSettings {
@@ -27,6 +27,7 @@ export default function WidgetSettings() {
   const [showTestWidget, setShowTestWidget] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch settings only once on component mount
   useEffect(() => {
@@ -120,6 +121,37 @@ export default function WidgetSettings() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleExport = () => {
+    const blob = new Blob([settings.businessInfo], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'business-info.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setSettings(prev => ({
+        ...prev,
+        businessInfo: content
+      }));
+    };
+    reader.readAsText(file);
+  };
+
   if (isLoading) {
     return (
       <div className="p-8 flex items-center justify-center">
@@ -197,7 +229,32 @@ export default function WidgetSettings() {
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Business Information</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Business Information</h2>
+          <div className="flex space-x-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept=".txt"
+              className="hidden"
+            />
+            <button
+              onClick={handleImport}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </button>
+            <button
+              onClick={handleExport}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </button>
+          </div>
+        </div>
         <div className="space-y-4">
           <label className="block text-sm font-medium text-gray-700">
             Detailed Business Information
