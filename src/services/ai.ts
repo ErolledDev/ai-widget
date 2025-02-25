@@ -15,11 +15,12 @@ interface ChatContext {
 export class AIService {
   private chat;
   private context: ChatContext;
-  private readonly maxResponseLength = 80; // Reduced for even shorter responses
+  private readonly maxResponseLength = 80;
   private visitorId: string;
   private sessionStartTime: Date;
   private messageCount: number = 0;
   private lastResponse: string = '';
+  private readonly allowedEmojis = ['😊', '👋', '👍'];
 
   constructor(context: ChatContext) {
     this.context = this.sanitizeContext(context);
@@ -49,7 +50,8 @@ export class AIService {
           3. Formatting:
              - Use *text* for emphasis (max once per message)
              - Only use these emojis (max one per message): 😊 👋 👍 
-             - No other special characters
+             - No other special characters or symbols
+             - No quotes, parentheses, or brackets
           
           4. Forbidden:
              - Mentioning being AI/assistant
@@ -61,6 +63,8 @@ export class AIService {
              - Multiple emojis
              - Excessive punctuation
              - Long greetings/closings
+             - Special characters
+             - Quotes or parentheses
           
           5. Unknown Topics:
              Redirect naturally to known products/services
@@ -68,7 +72,8 @@ export class AIService {
           6. Message Structure:
              - Start directly, no greeting needed
              - Get straight to the point
-             - End naturally, no formal closing`,
+             - End naturally, no formal closing
+             - Use only basic punctuation (period, exclamation)`,
         },
         {
           role: 'model',
@@ -95,38 +100,58 @@ export class AIService {
   }
 
   private formatResponse(text: string): string {
-    let formatted = text
-      .replace(/\*\*?(.*?)\*\*?/g, '<em>$1</em>')
-      .replace(/\n/g, '<br>')
-      .replace(/:[)]/g, '😊')
-      .replace(/o\//g, '👋')
-      .replace(/\+1/g, '👍')
-      .trim();
+    // Handle emphasis first
+    let formatted = text.replace(/\*\*?(.*?)\*\*?/g, '<em>$1</em>');
     
-    formatted = formatted.replace(/[^\w\s.,!?'😊👋👍\-<>\/br]/g, '');
+    // Replace line breaks
+    formatted = formatted.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+    
+    // Ensure only one emoji is used
+    let emojiCount = 0;
+    for (const emoji of this.allowedEmojis) {
+      const count = (formatted.match(new RegExp(emoji, 'g')) || []).length;
+      if (count > 0) {
+        emojiCount += count;
+        if (emojiCount > 1) {
+          // Remove extra emojis
+          formatted = formatted.replace(new RegExp(emoji, 'g'), '');
+        }
+      }
+    }
+    
+    // Remove all other special characters except basic punctuation
+    formatted = formatted.replace(/[^\w\s.,!?'😊👋👍\-<>\/em]/g, '');
+    
+    // Ensure proper spacing after punctuation
+    formatted = formatted.replace(/([.,!?])\s*/g, '$1 ').trim();
+    
+    // Remove multiple spaces
+    formatted = formatted.replace(/\s+/g, ' ');
     
     return formatted;
   }
 
   private sanitizeResponse(response: string): string {
-    // Remove common AI patterns
+    // Remove common AI patterns and formal language
     let sanitized = response
       .replace(/^(hi|hello|hey)(!|\s)/i, '')
       .replace(/^(sure|well|so)(!|\s)/i, '')
       .replace(/^(of course|absolutely)(!|\s)/i, '')
-      .replace(/(!+|\?+)/g, '$1') // Remove multiple punctuation
+      .replace(/(!+|\?+)/g, '$1')
       .replace(/\b(I can|I will|I would|I'd|I'll)\b/gi, 'can')
       .replace(/\b(let me|allow me)\b/gi, '')
       .replace(/\b(please|kindly)\b/gi, '')
+      .replace(/[()"'`]/g, '')
+      .replace(/[&@#$%^*+=\\|/<>~]/g, '')
       .trim();
 
-    // Ensure natural sentence ending
+    // Ensure natural sentence ending with single punctuation
     sanitized = sanitized
       .replace(/[.!?]+$/, '')
       .replace(/[.!?]\s*$/, '')
       .trim() + '!';
 
-    // Truncate if still too long
+    // Truncate if too long
     if (sanitized.length > this.maxResponseLength) {
       sanitized = sanitized
         .substring(0, this.maxResponseLength)
@@ -136,7 +161,7 @@ export class AIService {
 
     // Prevent exact response repetition
     if (sanitized === this.lastResponse) {
-      sanitized = 'Got it! What else can I help with? 👍';
+      sanitized = 'What else can I help with? 👍';
     }
     this.lastResponse = sanitized;
 
@@ -159,8 +184,21 @@ export class AIService {
       'let me know',
       'feel free',
       'as [representative name]',
-      'don\'t hesitate'
+      'don\'t hesitate',
+      '()',
+      '[]',
+      '{}',
+      '"',
+      '\'',
+      '`'
     ];
+
+    // Check for multiple emojis
+    const emojiCount = (response.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
+    if (emojiCount > 1) return false;
+
+    // Check for special characters
+    if (/[^a-zA-Z0-9\s.,!?'😊👋👍\-<>\/em]/.test(response)) return false;
 
     return !redFlags.some(flag => 
       response.toLowerCase().includes(flag.toLowerCase())
