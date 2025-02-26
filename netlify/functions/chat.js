@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 
 // Validate environment variables early
 const requiredEnvVars = {
   VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL,
   VITE_API_KEY: process.env.VITE_API_KEY,
-  VITE_GEMINI_API_KEY: process.env.VITE_GEMINI_API_KEY
+  VITE_OPENAI_API_KEY: process.env.VITE_OPENAI_API_KEY
 };
 
 // Check for missing environment variables
@@ -29,8 +29,10 @@ const supabase = createClient(
   }
 );
 
-// Initialize Google AI
-const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
+// Initialize OpenAI client
+const openai = new OpenAI({
+  apiKey: process.env.VITE_OPENAI_API_KEY
+});
 
 // CORS headers for all responses
 const corsHeaders = {
@@ -106,49 +108,31 @@ export async function handler(event) {
     }
 
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: 'gemini-pro',
-        generationConfig: {
-          maxOutputTokens: 100,
-          temperature: 0.7,
-          topP: 0.8,
-          topK: 40
-        }
-      });
+      const systemPrompt = `You are a helpful sales representative for ${settings.businessName}. 
+      Your name is ${settings.representativeName}.
+      Here is the business information you should use to help customers:
+      ${settings.businessInfo || 'No additional business information provided.'}
+      
+      CRITICAL RULES:
+      - Keep responses under 150 characters
+      - Be helpful and friendly
+      - Use natural, conversational language
+      - Provide relevant information from the business info
+      - Stay professional and on-topic
+      - Avoid excessive emojis or informal language`;
 
-      const chat = model.startChat({
-        history: [
-          {
-            role: 'user',
-            parts: [{text: `You are a helpful sales representative for ${settings.businessName}. 
-            Your name is ${settings.representativeName}.
-            Here is the business information you should use to help customers:
-            ${settings.businessInfo || 'No additional business information provided.'}
-            
-            CRITICAL RULES:
-            - Keep responses under 150 characters
-            - Be helpful and friendly
-            - Use natural, conversational language
-            - Provide relevant information from the business info
-            - Stay professional and on-topic
-            - Avoid excessive emojis or informal language`}]
-          },
-          {
-            role: 'model',
-            parts: [{text: 'Hi! How can I help you today?'}]
-          },
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
         ],
-        generationConfig: {
-          maxOutputTokens: 100,
-          temperature: 0.7,
-          topP: 0.8,
-          topK: 40
-        }
+        max_tokens: 100,
+        temperature: 0.7,
+        top_p: 0.8
       });
 
-      const result = await chat.sendMessage([{text: message}]);
-      const response = await result.response;
-      const responseText = response.text();
+      const responseText = completion.choices[0].message.content;
 
       // Ensure response isn't too long
       const maxLength = 150;
