@@ -2,10 +2,10 @@ import OpenAI from 'openai';
 import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize OpenAI client
+// Initialize OpenAI client with proper configuration
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true
+  dangerouslyAllowBrowser: true // Required for client-side usage
 });
 
 // Create a Supabase client with service role key for analytics
@@ -95,7 +95,7 @@ export class AIService {
       - Stay professional and on-topic
       - Avoid excessive emojis or informal language`;
 
-      const response = await openai.chat.completions.create({
+      const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: systemPrompt },
@@ -106,7 +106,7 @@ export class AIService {
         top_p: 0.8
       });
 
-      this.lastResponse = response.choices[0].message.content || 'I apologize, but I encountered an error. Please try again.';
+      this.lastResponse = completion.choices[0].message.content || 'I apologize, but I encountered an error. Please try again.';
       
       // Truncate if necessary
       if (this.lastResponse.length > this.maxResponseLength) {

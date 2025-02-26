@@ -32,28 +32,29 @@ const supabase = createClient(
 // Initialize Google AI
 const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY);
 
+// CORS headers for all responses
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  'Access-Control-Max-Age': '86400'
+};
+
 export async function handler(event) {
   // Handle CORS preflight requests
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Max-Age': '86400',
-      },
+      headers: corsHeaders,
+      body: ''
     };
   }
 
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({ error: 'Method not allowed' }),
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
 
@@ -62,14 +63,11 @@ export async function handler(event) {
     if (missingEnvVars.length > 0) {
       return {
         statusCode: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           error: 'Server configuration error',
           details: process.env.NODE_ENV === 'development' ? `Missing environment variables: ${missingEnvVars.join(', ')}` : undefined
-        }),
+        })
       };
     }
 
@@ -80,11 +78,8 @@ export async function handler(event) {
       console.error('Failed to parse request body:', e);
       return {
         statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({ error: 'Invalid request body' }),
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Invalid request body' })
       };
     }
 
@@ -102,14 +97,11 @@ export async function handler(event) {
     if (validationErrors.length > 0) {
       return {
         statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           error: 'Validation failed',
           details: validationErrors 
-        }),
+        })
       };
     }
 
@@ -166,41 +158,29 @@ export async function handler(event) {
 
       return {
         statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'no-cache',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-        },
-        body: JSON.stringify({ response: finalResponse }),
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ response: finalResponse })
       };
     } catch (aiError) {
       console.error('AI processing error:', aiError);
       return {
         statusCode: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           error: 'Failed to generate AI response',
           details: process.env.NODE_ENV === 'development' ? aiError.message : undefined
-        }),
+        })
       };
     }
   } catch (error) {
     console.error('Unhandled error in chat function:', error);
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         error: 'An unexpected error occurred',
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      }),
+      })
     };
   }
 }
