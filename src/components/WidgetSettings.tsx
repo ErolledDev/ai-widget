@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import { useAuth } from '../contexts/AuthContext';
 import { Copy, Check, Download, Upload } from 'lucide-react';
-import ChatWidget from './ChatWidget';
 
 interface WidgetSettings {
   color: string;
@@ -24,7 +23,6 @@ export default function WidgetSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [showTestWidget, setShowTestWidget] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -273,24 +271,15 @@ export default function WidgetSettings() {
       </div>
 
       <div className="flex justify-between items-center">
-        <div className="flex space-x-4 items-center">
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-              isSaving ? 'opacity-75 cursor-not-allowed' : ''
-            }`}
-          >
-            {isSaving ? 'Saving...' : 'Save Settings'}
-          </button>
-
-          <button
-            onClick={() => setShowTestWidget(!showTestWidget)}
-            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            {showTestWidget ? 'Hide Test Widget' : 'Test Widget'}
-          </button>
-        </div>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+            isSaving ? 'opacity-75 cursor-not-allowed' : ''
+          }`}
+        >
+          {isSaving ? 'Saving...' : 'Save Settings'}
+        </button>
 
         <button
           onClick={copyToClipboard}
@@ -300,10 +289,6 @@ export default function WidgetSettings() {
           {copied ? 'Copied!' : 'Copy Widget Code'}
         </button>
       </div>
-
-      {showTestWidget && (
-        <ChatWidget settings={settings} isTest={true} />
-      )}
     </div>
   );
 }
