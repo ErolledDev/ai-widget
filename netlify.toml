@@ -8,14 +8,14 @@
   to = "/.netlify/functions/settings/:splat"
   status = 200
   force = true
-  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, OPTIONS", Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"}
+  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, OPTIONS", Access-Control-Allow-Headers = "*"}
 
 [[redirects]]
   from = "/api/chat"
   to = "/.netlify/functions/chat"
   status = 200
   force = true
-  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, OPTIONS", Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"}
+  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, OPTIONS", Access-Control-Allow-Headers = "*"}
 
 [[redirects]]
   from = "/*"
@@ -27,7 +27,7 @@
     [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"
+    Access-Control-Allow-Headers = "*"
     Access-Control-Max-Age = "86400"
 
 [[headers]]
@@ -35,5 +35,5 @@
     [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization, X-Requested-With"
+    Access-Control-Allow-Headers = "*"
     Access-Control-Max-Age = "86400"
